@@ -2,13 +2,13 @@
 import Grid from '@mui/material/Grid'
 
 // Type Imports
-import type { InvoiceType } from '@/types/apps/invoiceTypes'
+import type { ReportsType } from '@/types/apps/reportsTypes'
 
 // Component Imports
 import ReportsCard from './ReportsCard'
 import ReportsListTable from './ReportsListTable'
 
-const ReportsList = ({ invoiceData }: { invoiceData?: InvoiceType[] }) => {
+const ReportsList = ({ invoiceData }: { invoiceData?: ReportsType[] }) => {
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>

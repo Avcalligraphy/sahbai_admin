@@ -14,7 +14,7 @@ const AspirationsList = ({ orderData }: { orderData?: AspirationsType[] }) => {
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
-        <AspirationsCard orderData={orderData} />
+        <AspirationsCard />
       </Grid>
       <Grid item xs={12}>
         <AspirationsListTable orderData={orderData} />

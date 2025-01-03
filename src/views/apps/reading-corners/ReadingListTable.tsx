@@ -1,9 +1,7 @@
 // React Imports
 import { useState, useEffect, useMemo } from 'react'
 
-// Next Imports
-// import Link from 'next/link'
-// import { useParams } from 'next/navigation'
+import Swal from 'sweetalert2'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -11,7 +9,7 @@ import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import Checkbox from '@mui/material/Checkbox'
-import { CardHeader, Divider } from '@mui/material'
+import { FormControl, IconButton, InputLabel, MenuItem, Select } from '@mui/material'
 
 // import Chip from '@mui/material/Chip'
 import TablePagination from '@mui/material/TablePagination'
@@ -44,7 +42,6 @@ import type { ThemeColor } from '@core/types'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
-import OptionMenu from '@core/components/option-menu'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
@@ -54,9 +51,9 @@ import { getInitials } from '@/utils/getInitials'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-import TableFilters from './TableFilters'
-
 import type { ReadingType } from '@/types/apps/readingTypes'
+
+import { useAppContext } from '@/contexts/AppContext'
 
 declare module '@tanstack/table-core' {
   interface FilterFns {
@@ -146,15 +143,110 @@ const columnHelper = createColumnHelper<ReadingTypeWithAction>()
 const ReadingListTable = ({ orderData }: { orderData?: ReadingType[] }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
-
+  const [filteredData, setFilteredData] = useState<ReadingType[]>([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [selectedWritter, setSelectedWritter] = useState<string>('')
 
-  // Hooks
-  // const { lang: locale } = useParams()
+  const { readings, fetchReadings, deleteReading, deleteMultipleReadings } = useAppContext()
 
-  // Vars
-  // const paypal = '/images/apps/ecommerce/paypal.png'
-  // const mastercard = '/images/apps/ecommerce/mastercard.png'
+  useEffect(() => {
+    fetchReadings()
+  }, [])
+
+  useEffect(() => {
+    const filtered = readings.filter(reading => {
+      // Filter berdasarkan sekolah
+      if (selectedWritter && reading.writter !== selectedWritter) return false
+
+      // Filter berdasarkan global search
+      if (globalFilter) {
+        const searchValue = globalFilter.toLowerCase()
+
+        return Object.values(readings).some(value => String(value).toLowerCase().includes(searchValue))
+      }
+
+      return true
+    })
+
+    setFilteredData(filtered)
+  }, [readings, selectedWritter, globalFilter])
+
+  // Unique schools for filter
+  const uniqueWritters = useMemo(() => {
+    return Array.from(new Set(readings.map(reading => reading.writter || 'Unknown')))
+  }, [readings])
+
+  // Delete Aspiration
+  const handleDelete = async (readingId: number) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0E632F',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+      })
+
+      if (result.isConfirmed) {
+        // Panggil method delete dari context
+        await deleteReading(readingId)
+
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Your reading has been deleted.',
+          icon: 'success'
+        })
+      }
+    } catch (error) {
+      console.error('Failed to delete reading:', error)
+      Swal.fire({
+        title: 'Error!',
+        text: 'Something went wrong while deleting the reading.',
+        icon: 'error'
+      })
+    }
+  }
+
+  // Delete Multiple Aspirations
+  const handleDeleteSelected = async () => {
+    // Ambil ID yang dipilih
+    const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id)
+
+    try {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0E632F',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+      })
+
+      if (result.isConfirmed) {
+        // Proses delete multiple menggunakan context
+        await deleteMultipleReadings(selectedIds)
+
+        // Reset row selection
+        table.resetRowSelection()
+
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Selected readings have been deleted.',
+          icon: 'success'
+        })
+      }
+    } catch (error) {
+      console.error('Failed to delete selected readings', error)
+      Swal.fire({
+        title: 'Error!',
+        text: 'Something went wrong while deleting readings.',
+        icon: 'error'
+      })
+    }
+  }
 
   const columns = useMemo<ColumnDef<ReadingType, any>[]>(
     () => [
@@ -181,8 +273,18 @@ const ReadingListTable = ({ orderData }: { orderData?: ReadingType[] }) => {
         )
       },
       columnHelper.accessor('id', {
-        header: 'ID',
-        cell: ({ row }) => <Typography>{row.original.id}</Typography>
+        header: 'No',
+        cell: ({ row, table }) => {
+          // Hitung nomor berdasarkan halaman dan index
+          const pageIndex = table.getState().pagination.pageIndex
+          const pageSize = table.getState().pagination.pageSize
+          const rowIndex = row.index
+
+          // Hitung nomor urut
+          const serialNumber = pageIndex * pageSize + rowIndex + 1
+
+          return <Typography color='primary'>{serialNumber}</Typography>
+        }
       }),
       columnHelper.accessor('image', {
         header: 'Image',
@@ -224,39 +326,21 @@ const ReadingListTable = ({ orderData }: { orderData?: ReadingType[] }) => {
       columnHelper.accessor('action', {
         header: 'Action',
         cell: ({ row }) => (
-          <OptionMenu
-            iconButtonProps={{ size: 'medium' }}
-            iconClassName='text-[22px]'
-            options={[
-              {
-                text: 'View',
-                icon: 'ri-eye-line',
-                href: `/aspirations/${row.original.id}`,
-                linkProps: { className: 'flex items-center gap-2 is-full plb-2 pli-4' }
-              },
-              {
-                text: 'Delete',
-                icon: 'ri-delete-bin-7-line text-[22px]',
-                menuItemProps: {
-                  onClick: () => {
-                    // Implement delete logic
-                    console.log('Delete', row.original.id)
-                  },
-                  className: 'flex items-center gap-2 pli-4'
-                }
-              }
-            ]}
-          />
+          <div className='flex items-center gap-0.5'>
+            <IconButton size='small' onClick={() => handleDelete(row.original.id)}>
+              <i className='ri-delete-bin-7-line text-textSecondary' />
+            </IconButton>
+          </div>
         ),
         enableSorting: false
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orderData]
+    [orderData, filteredData]
   )
 
   const table = useReactTable({
-    data: orderData as ReadingType[],
+    data: filteredData as ReadingType[],
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
@@ -300,19 +384,44 @@ const ReadingListTable = ({ orderData }: { orderData?: ReadingType[] }) => {
 
   return (
     <Card>
-      <CardHeader title='Filters' />
-      <TableFilters />
-      <Divider />
-      <CardContent className='flex justify-between items-center gap-4'>
-        <DebouncedInput
-          value={globalFilter ?? ''}
-          onChange={value => setGlobalFilter(String(value))}
-          placeholder='Search Aspirations'
-          className='sm:is-auto'
-        />
-        <Button variant='outlined' color='secondary' startIcon={<i className='ri-upload-2-line' />}>
-          Export
-        </Button>
+      <CardContent className='flex justify-end flex-col sm:flex-row gap-4 flex-wrap items-start sm:items-center'>
+        <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
+          {Object.keys(rowSelection).length > 0 && (
+            <Button
+              variant='contained'
+              onClick={handleDeleteSelected}
+              startIcon={<i className='ri-delete-bin-7-line' />}
+            >
+              Delete {Object.keys(rowSelection).length} Selected
+            </Button>
+          )}
+        </div>
+        <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
+          <DebouncedInput
+            value={globalFilter ?? ''}
+            onChange={value => setGlobalFilter(String(value))}
+            placeholder='Search Aspirations'
+            className='is-full sm:is-auto min-is-[250px]'
+          />
+          <FormControl fullWidth size='small' className='min-is-[175px]'>
+            <InputLabel id='writter-select'>Writter</InputLabel>
+            <Select
+              fullWidth
+              id='writter-school'
+              value={selectedWritter}
+              onChange={e => setSelectedWritter(e.target.value)}
+              label='Writter'
+              labelId='writter-select'
+            >
+              <MenuItem value=''>All Writters</MenuItem>
+              {uniqueWritters.map(writter => (
+                <MenuItem key={writter} value={writter}>
+                  {writter}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </div>
       </CardContent>
       <div className='overflow-x-auto'>
         <table className={tableStyles.table}>

@@ -1,4 +1,8 @@
+'use client'
+
 // MUI Imports
+import { useEffect } from 'react'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 
@@ -13,7 +17,8 @@ import classnames from 'classnames'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
-import type { AspirationsType } from '@/types/apps/aspirationsTypes'
+
+import { useAppContext } from '@/contexts/AppContext'
 
 // Vars
 // const data = [
@@ -39,7 +44,14 @@ import type { AspirationsType } from '@/types/apps/aspirationsTypes'
 //   }
 // ]
 
-const AspirationsCard = ({ orderData }: { orderData?: AspirationsType[] }) => {
+const AspirationsCard = () => {
+  const { aspirations, fetchAspirations } = useAppContext()
+
+  // Fetch schools saat komponen dimount
+  useEffect(() => {
+    fetchAspirations()
+  }, [])
+
   // Hooks
   const isBelowMdScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
   const isBelowSmScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'))
@@ -60,10 +72,10 @@ const AspirationsCard = ({ orderData }: { orderData?: AspirationsType[] }) => {
           >
             <div className='flex justify-between'>
               <div className='flex flex-col'>
-                <Typography variant='h4'>{orderData?.length}</Typography>
+                <Typography variant='h4'>{aspirations.length}</Typography>
                 <Typography>Total Aspirations</Typography>
               </div>
-              <CustomAvatar variant='rounded' size={42} skin='light'>
+              <CustomAvatar variant='rounded' color='primary' size={42} skin='light'>
                 <i className={classnames('text-[26px]', 'ri-apps-line')} />
               </CustomAvatar>
             </div>

@@ -1,84 +1,77 @@
 'use client'
 
 // MUI Imports
+import { useEffect, useMemo } from 'react'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Grid from '@mui/material/Grid'
-import Divider from '@mui/material/Divider'
 import Typography from '@mui/material/Typography'
-import useMediaQuery from '@mui/material/useMediaQuery'
-import type { Theme } from '@mui/material/styles'
 
 // Third-party Imports
 import classnames from 'classnames'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
-
-// Vars
-const data = [
-  {
-    title: 24,
-    subtitle: 'Clients',
-    icon: 'ri-user-3-line'
-  },
-  {
-    title: 165,
-    subtitle: 'Invoices',
-    icon: 'ri-pages-line'
-  },
-  {
-    title: '$2.46k',
-    subtitle: 'Paid',
-    icon: 'ri-wallet-line'
-  },
-  {
-    title: '$876',
-    subtitle: 'Unpaid',
-    icon: 'ri-money-dollar-circle-line'
-  }
-]
+import { useAppContext } from '@/contexts/AppContext'
 
 const ReportsCard = () => {
-  // Hooks
-  const isBelowMdScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
-  const isBelowSmScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'))
+  const { reports, fetchReports } = useAppContext()
+
+  // Fetch users saat komponen dimount
+  useEffect(() => {
+    fetchReports()
+  }, [])
+
+  const reportStats = useMemo(() => {
+    return {
+      totalReports: reports.length,
+      victimReports: reports.filter(report => report.victimName).length,
+      perpetratorReports: reports.filter(report => report.perpetratorName).length
+    }
+  }, [reports])
+
+  const cardData = [
+    {
+      title: 'Total Reports',
+      stats: reportStats.totalReports,
+      avatarIcon: 'ri-file-list-3-line', // Daftar laporan keseluruhan
+      avatarColor: 'primary'
+    },
+    {
+      title: 'Victim Report',
+      stats: reportStats.victimReports,
+      avatarIcon: 'ri-emotion-sad-line', // Ikon sedih/korban
+      avatarColor: 'success'
+    },
+    {
+      title: 'Perpetrator Report',
+      stats: reportStats.perpetratorReports,
+      avatarIcon: 'ri-error-warning-line', // Ikon peringatan/pelaku
+      avatarColor: 'warning'
+    }
+  ]
 
   return (
-    <Card>
-      <CardContent>
-        <Grid container spacing={6}>
-          {data.map((item, index) => (
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={3}
-              key={index}
-              className='sm:[&:nth-of-type(odd)>div]:pie-6 sm:[&:nth-of-type(odd)>div]:border-ie md:[&:not(:last-child)>div]:pie-6 md:[&:not(:last-child)>div]:border-ie'
-            >
-              <div className='flex justify-between'>
-                <div className='flex flex-col'>
-                  <Typography variant='h4'>{item.title}</Typography>
-                  <Typography>{item.subtitle}</Typography>
+    <Grid container spacing={6}>
+      {cardData.map((card, index) => (
+        <Grid key={index} item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent className='flex justify-between gap-1'>
+              <div className='flex flex-col gap-1 flex-grow'>
+                <Typography color='text.primary'>{card.title}</Typography>
+                <div className='flex items-center gap-2 flex-wrap'>
+                  <Typography variant='h4'>{card.stats}</Typography>
                 </div>
-                <CustomAvatar variant='rounded' size={42}>
-                  <i className={classnames('text-[26px]', item.icon)} />
-                </CustomAvatar>
               </div>
-              {isBelowMdScreen && !isBelowSmScreen && index < data.length - 2 && (
-                <Divider
-                  className={classnames('mbs-6', {
-                    'mie-6': index % 2 === 0
-                  })}
-                />
-              )}
-              {isBelowSmScreen && index < data.length - 1 && <Divider className='mbs-6' />}
-            </Grid>
-          ))}
+              <CustomAvatar color={card.avatarColor as any} skin='light' variant='rounded' size={42}>
+                <i className={classnames(card.avatarIcon, 'text-[26px]')} />
+              </CustomAvatar>
+            </CardContent>
+          </Card>
         </Grid>
-      </CardContent>
-    </Card>
+      ))}
+    </Grid>
   )
 }
 

@@ -194,16 +194,16 @@ const UserListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         header: 'Email',
         cell: ({ row }) => <Typography>{row.original.email}</Typography>
       }),
-      columnHelper.accessor('role', {
+      columnHelper.accessor('roleUser', {
         header: 'Role',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <Icon
-              className={classnames('text-[22px]', userRoleObj[row.original.role].icon)}
-              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.role].color}-main)` }}
+              className={classnames('text-[22px]', userRoleObj[row.original.roleUser].icon)}
+              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.roleUser].color}-main)` }}
             />
             <Typography className='capitalize' color='text.primary'>
-              {row.original.role}
+              {row.original.roleUser}
             </Typography>
           </div>
         )

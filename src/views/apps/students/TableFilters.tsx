@@ -1,34 +1,34 @@
-// React Imports
+'use client'
+
 import { useState, useEffect } from 'react'
 
-// MUI Imports
-import CardContent from '@mui/material/CardContent'
-import FormControl from '@mui/material/FormControl'
-import Grid from '@mui/material/Grid'
-import InputLabel from '@mui/material/InputLabel'
-import MenuItem from '@mui/material/MenuItem'
-import Select from '@mui/material/Select'
+import { CardContent, FormControl, Grid, InputLabel, MenuItem, Select } from '@mui/material'
 
 // Type Imports
 import type { UsersType } from '@/types/apps/userTypes'
 
-const TableFilters = ({ setData, tableData }: { setData: (data: UsersType[]) => void; tableData?: UsersType[] }) => {
+type TableFiltersProps = {
+  onFilterChange: (filters: { roleUser: string; school: string; status: string }) => void
+
+  // Opsional: data untuk generate unique values
+  tableData?: UsersType[]
+}
+
+const TableFilters = ({ onFilterChange, tableData }: TableFiltersProps) => {
   // States
-  const [role, setRole] = useState<UsersType['role']>('')
-  const [plan, setPlan] = useState<UsersType['currentPlan']>('')
-  const [status, setStatus] = useState<UsersType['status']>('')
+  const [roleUser, setRoleUser] = useState('')
+  const [school, setSchool] = useState('')
+  const [status, setStatus] = useState('')
 
+  // Unique values
+  const uniqueroleUsers = tableData ? Array.from(new Set(tableData.map(user => user.roleUser).filter(Boolean))) : []
+
+  const uniqueSchools = tableData ? Array.from(new Set(tableData.map(user => user.school?.title).filter(Boolean))) : []
+
+  // Trigger filter change
   useEffect(() => {
-    const filteredData = tableData?.filter(user => {
-      if (role && user.role !== role) return false
-      if (plan && user.currentPlan !== plan) return false
-      if (status && user.status !== status) return false
-
-      return true
-    })
-
-    setData(filteredData || [])
-  }, [role, plan, status, tableData, setData])
+    onFilterChange({ roleUser, school, status })
+  }, [roleUser, school, status])
 
   return (
     <CardContent>
@@ -39,38 +39,37 @@ const TableFilters = ({ setData, tableData }: { setData: (data: UsersType[]) => 
             <Select
               fullWidth
               id='select-role'
-              value={role}
-              onChange={e => setRole(e.target.value)}
+              value={roleUser}
+              onChange={e => setRoleUser(e.target.value)}
               label='Select Role'
               labelId='role-select'
-              inputProps={{ placeholder: 'Select Role' }}
             >
-              <MenuItem value=''>Select Role</MenuItem>
-              <MenuItem value='admin'>Admin</MenuItem>
-              <MenuItem value='author'>Author</MenuItem>
-              <MenuItem value='editor'>Editor</MenuItem>
-              <MenuItem value='maintainer'>Maintainer</MenuItem>
-              <MenuItem value='subscriber'>Subscriber</MenuItem>
+              <MenuItem value=''>All Role</MenuItem>
+              {uniqueroleUsers.map(roleUserOption => (
+                <MenuItem key={roleUserOption} value={roleUserOption}>
+                  {roleUserOption}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Grid>
         <Grid item xs={12} sm={4}>
           <FormControl fullWidth>
-            <InputLabel id='plan-select'>Select Plan</InputLabel>
+            <InputLabel id='school-select'>Select School</InputLabel>
             <Select
               fullWidth
-              id='select-plan'
-              value={plan}
-              onChange={e => setPlan(e.target.value)}
-              label='Select Plan'
-              labelId='plan-select'
-              inputProps={{ placeholder: 'Select Plan' }}
+              id='select-school'
+              value={school}
+              onChange={e => setSchool(e.target.value)}
+              label='Select School'
+              labelId='school-select'
             >
-              <MenuItem value=''>Select Plan</MenuItem>
-              <MenuItem value='basic'>Basic</MenuItem>
-              <MenuItem value='company'>Company</MenuItem>
-              <MenuItem value='enterprise'>Enterprise</MenuItem>
-              <MenuItem value='team'>Team</MenuItem>
+              <MenuItem value=''>All Schools</MenuItem>
+              {uniqueSchools.map(schoolOption => (
+                <MenuItem key={schoolOption} value={schoolOption}>
+                  {schoolOption}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Grid>
@@ -80,16 +79,14 @@ const TableFilters = ({ setData, tableData }: { setData: (data: UsersType[]) => 
             <Select
               fullWidth
               id='select-status'
-              label='Select Status'
               value={status}
               onChange={e => setStatus(e.target.value)}
+              label='Select Status'
               labelId='status-select'
-              inputProps={{ placeholder: 'Select Status' }}
             >
-              <MenuItem value=''>Select Status</MenuItem>
-              <MenuItem value='pending'>Pending</MenuItem>
+              <MenuItem value=''>All Statuses</MenuItem>
               <MenuItem value='active'>Active</MenuItem>
-              <MenuItem value='inactive'>Inactive</MenuItem>
+              <MenuItem value='blocked'>Blocked</MenuItem>
             </Select>
           </FormControl>
         </Grid>

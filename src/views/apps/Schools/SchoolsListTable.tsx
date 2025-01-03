@@ -4,7 +4,6 @@
 import { useState, useEffect, useMemo } from 'react'
 
 // Next Imports
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 import Swal from 'sweetalert2'
@@ -17,10 +16,6 @@ import Typography from '@mui/material/Typography'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
 import TablePagination from '@mui/material/TablePagination'
 import type { TextFieldProps } from '@mui/material/TextField'
 
@@ -56,7 +51,8 @@ import { getLocalizedUrl } from '@/utils/i18n'
 import tableStyles from '@core/styles/table.module.css'
 import AddSchool from './AddSchool'
 
-import { schoolActions } from '@/libs/actions/actions'
+import { useAppContext } from '@/contexts/AppContext'
+import { exportSchoolsToExcel } from '@/libs/excel'
 
 declare module '@tanstack/table-core' {
   interface FilterFns {
@@ -134,14 +130,46 @@ const DebouncedInput = ({
 const columnHelper = createColumnHelper<SchoolsTypeWithAction>()
 
 const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
-  // States
-  const [status, setStatus] = useState<SchoolsType['schoolsStatus']>('')
-  const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[invoiceData])
-  const [filteredData, setFilteredData] = useState(data)
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [addUserOpen, setAddUserOpen] = useState(false)
+  const { schools, deleteSchool, deleteMultipleSchools } = useAppContext()
 
+  // States
+  const [rowSelection, setRowSelection] = useState({})
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [selectedSchool, setSelectedSchool] = useState<SchoolsType | undefined>(undefined)
+
+  // Handler untuk membuka drawer create
+  const handleOpenCreateDrawer = () => {
+    setSelectedSchool(undefined)
+    setIsDrawerOpen(true)
+  }
+
+  const handleExport = async () => {
+    await exportSchoolsToExcel(schools)
+  }
+
+  // Handler untuk membuka drawer update
+  const handleOpenUpdateDrawer = (school: SchoolsType) => {
+    setSelectedSchool(school)
+    setIsDrawerOpen(true)
+  }
+
+  // Filter data berdasarkan global filter dan status
+  const filteredData = useMemo(() => {
+    return schools.filter(school => {
+      // Filter berdasarkan global search
+      const matchesGlobalFilter = globalFilter
+        ? Object.values(school).some(value => String(value).toLowerCase().includes(globalFilter.toLowerCase()))
+        : true
+
+      // Filter berdasarkan status
+      const matchesStatus = status ? school.schoolsStatus.toLowerCase().replace(/\s+/g, '-') === status : true
+
+      return matchesGlobalFilter && matchesStatus
+    })
+  }, [schools, globalFilter, status])
+
+  // Handler Delete Single
   const handleDelete = async (schoolId: number) => {
     try {
       const result = await Swal.fire({
@@ -155,26 +183,16 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       })
 
       if (result.isConfirmed) {
-        // Panggil action delete
-        await schoolActions.delete(schoolId)
+        // Gunakan method delete dari context
+        await deleteSchool(schoolId)
 
-        // Update data lokal dengan menghapus item yang sesuai
-        const updatedData = data?.filter(school => school.id !== schoolId)
-
-        // Update state
-        setData(updatedData)
-        setFilteredData(updatedData)
-
-        // Optional: Tambahkan toast notification
-        console.log('School deleted successfully')
         Swal.fire({
           title: 'Deleted!',
-          text: 'Your file has been deleted.',
+          text: 'Your school has been deleted.',
           icon: 'success'
         })
       }
     } catch (error) {
-      // Error handling
       console.error('Failed to delete school:', error)
       Swal.fire({
         title: 'Error!',
@@ -184,6 +202,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
     }
   }
 
+  // Handler Delete Multiple
   const handleDeleteSelected = async () => {
     // Ambil ID yang dipilih
     const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id)
@@ -200,22 +219,15 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       })
 
       if (result.isConfirmed) {
-        // Proses delete multiple
-        await Promise.all(selectedIds.map(id => schoolActions.delete(id)))
-
-        // Filter out deleted items
-        const updatedData = data?.filter(school => !selectedIds.includes(school.id))
-
-        // Update state
-        setData(updatedData)
-        setFilteredData(updatedData)
+        // Gunakan method delete multiple dari context
+        await deleteMultipleSchools(selectedIds)
 
         // Reset row selection
         table.resetRowSelection()
-        console.log('School deleted successfully')
+
         Swal.fire({
           title: 'Deleted!',
-          text: 'Your file has been deleted.',
+          text: 'Selected schools have been deleted.',
           icon: 'success'
         })
       }
@@ -223,7 +235,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       console.error('Failed to delete selected schools', error)
       Swal.fire({
         title: 'Error!',
-        text: 'Something went wrong while deleting the school.',
+        text: 'Something went wrong while deleting schools.',
         icon: 'error'
       })
     }
@@ -281,16 +293,12 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       columnHelper.accessor('users_permissions_users', {
         header: 'Students',
         cell: ({ row }) => (
-          <Typography color='text.primary'>
-            {row.original.users_permissions_users?.data?.length || 'Unknown'}
-          </Typography>
+          <Typography color='text.primary'>{row.original.users_permissions_users?.data?.length || '0'}</Typography>
         )
       }),
       columnHelper.accessor('teachers', {
         header: 'Teachers',
-        cell: ({ row }) => (
-          <Typography color='text.primary'>{row.original.teachers?.data?.length || 'Unknown'}</Typography>
-        )
+        cell: ({ row }) => <Typography color='text.primary'>{row.original.teachers?.data?.length || '0'}</Typography>
       }),
       columnHelper.accessor('action', {
         header: 'Action',
@@ -299,13 +307,8 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
             <IconButton size='small' onClick={() => handleDelete(row.original.id)}>
               <i className='ri-delete-bin-7-line text-textSecondary' />
             </IconButton>
-            <IconButton size='small'>
-              <Link
-                href={getLocalizedUrl(`/apps/invoice/preview/${row.original.id}`, locale as Locale)}
-                className='flex'
-              >
-                <i className='ri-eye-line text-textSecondary' />
-              </Link>
+            <IconButton size='small' onClick={() => handleOpenUpdateDrawer(row.original)}>
+              <i className='ri-pencil-line text-textSecondary' />
             </IconButton>
             <OptionMenu
               iconClassName='text-textSecondary'
@@ -336,7 +339,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, filteredData]
+    [invoiceData, filteredData]
   )
 
   const table = useReactTable({
@@ -368,15 +371,15 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
-  useEffect(() => {
-    const filteredData = data?.filter(schools => {
-      if (status && schools.status.toLowerCase().replace(/\s+/g, '-') !== status) return false
+  // useEffect(() => {
+  //   const filteredData = data?.filter(schools => {
+  //     if (status && schools.status.toLowerCase().replace(/\s+/g, '-') !== status) return false
 
-      return true
-    })
+  //     return true
+  //   })
 
-    setFilteredData(filteredData)
-  }, [status, data, setFilteredData])
+  //   setFilteredData(filteredData)
+  // }, [status, data, setFilteredData])
 
   return (
     <>
@@ -388,6 +391,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
               variant='outlined'
               startIcon={<i className='ri-upload-2-line' />}
               className='is-full sm:is-auto'
+              onClick={handleExport}
             >
               Export
             </Button>
@@ -395,7 +399,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
               variant='contained'
               startIcon={<i className='ri-add-line' />}
               className='is-full sm:is-auto'
-              onClick={() => setAddUserOpen(!addUserOpen)}
+              onClick={handleOpenCreateDrawer}
             >
               Add School
             </Button>
@@ -414,28 +418,9 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
             <DebouncedInput
               value={globalFilter ?? ''}
               onChange={value => setGlobalFilter(String(value))}
-              placeholder='Search Invoice'
+              placeholder='Search Schools'
               className='is-full sm:is-auto min-is-[250px]'
             />
-            <FormControl fullWidth size='small' className='min-is-[175px]'>
-              <InputLabel id='status-select'>Invoice Status</InputLabel>
-              <Select
-                fullWidth
-                id='select-status'
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                label='Invoice Status'
-                labelId='status-select'
-              >
-                <MenuItem value=''>none</MenuItem>
-                <MenuItem value='downloaded'>Downloaded</MenuItem>
-                <MenuItem value='draft'>Draft</MenuItem>
-                <MenuItem value='paid'>Paid</MenuItem>
-                <MenuItem value='partial-payment'>Partial Payment</MenuItem>
-                <MenuItem value='past-due'>Past Due</MenuItem>
-                <MenuItem value='sent'>Sent</MenuItem>
-              </Select>
-            </FormControl>
           </div>
         </CardContent>
         <div className='overflow-x-auto'>
@@ -507,10 +492,9 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
         />
       </Card>
       <AddSchool
-        open={addUserOpen}
-        handleClose={() => setAddUserOpen(!addUserOpen)}
-        userData={data}
-        setData={setData}
+        open={isDrawerOpen}
+        handleClose={() => setIsDrawerOpen(false)}
+        initialData={selectedSchool} // Kirim data school jika update
       />
     </>
   )

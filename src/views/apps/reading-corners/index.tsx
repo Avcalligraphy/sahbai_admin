@@ -4,13 +4,13 @@
 import Grid from '@mui/material/Grid'
 
 // Type Imports
-import type { OrderType } from '@/types/apps/ecommerceTypes'
+import type { ReadingType } from '@/types/apps/readingTypes'
 
 // Component Imports
 import ReadingCard from './ReadingCard'
 import ReadingListTable from './ReadingListTable'
 
-const ReadingList = ({ orderData }: { orderData?: OrderType[] }) => {
+const ReadingList = ({ orderData }: { orderData?: ReadingType[] }) => {
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>

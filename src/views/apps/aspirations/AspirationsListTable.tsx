@@ -45,7 +45,8 @@ import type { AspirationsType } from '@/types/apps/aspirationsTypes'
 import tableStyles from '@core/styles/table.module.css'
 import CustomAvatar from '@/@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
-import { aspirationActions } from '@/libs/actions/actions'
+import { useAppContext } from '@/contexts/AppContext'
+import { exportAspirationsToExcel } from '@/libs/excel'
 
 declare module '@tanstack/table-core' {
   interface FilterFns {
@@ -126,25 +127,42 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
   // States
   // const [status, setStatus] = useState<AspirationsType['aspirationsStatus']>('')
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[orderData])
-  const [filteredData, setFilteredData] = useState(data)
+  const [filteredData, setFilteredData] = useState<AspirationsType[]>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [selectedSchool, setSelectedSchool] = useState<string>('')
 
-  const uniqueSchools = useMemo(() => {
-    return Array.from(new Set(data?.map(aspiration => aspiration.school.data?.attributes?.title || 'Unknown')))
-  }, [data])
+  const { aspirations, fetchAspirations, deleteAspiration, deleteMultipleAspirations } = useAppContext()
 
+  // Fetch aspirations on component mount
   useEffect(() => {
-    const filteredData = data?.filter(aspiration => {
+    fetchAspirations()
+  }, [])
+  useEffect(() => {
+    const filtered = aspirations.filter(aspiration => {
       // Filter berdasarkan sekolah
       if (selectedSchool && aspiration.school.data?.attributes?.title !== selectedSchool) return false
+
+      // Filter berdasarkan global search
+      if (globalFilter) {
+        const searchValue = globalFilter.toLowerCase()
+
+        return Object.values(aspiration).some(value => String(value).toLowerCase().includes(searchValue))
+      }
 
       return true
     })
 
-    setFilteredData(filteredData)
-  }, [selectedSchool, data])
+    setFilteredData(filtered)
+  }, [aspirations, selectedSchool, globalFilter])
+
+  // Unique schools for filter
+  const uniqueSchools = useMemo(() => {
+    return Array.from(new Set(aspirations.map(aspiration => aspiration.school.data?.attributes?.title || 'Unknown')))
+  }, [aspirations])
+
+  const handleExport = async () => {
+    await exportAspirationsToExcel(aspirations)
+  }
 
   // Delete Aspiration
   const handleDelete = async (aspirationId: number) => {
@@ -160,26 +178,16 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
       })
 
       if (result.isConfirmed) {
-        // Panggil action delete
-        await aspirationActions.delete(aspirationId)
+        // Panggil method delete dari context
+        await deleteAspiration(aspirationId)
 
-        // Update data lokal dengan menghapus item yang sesuai
-        const updatedData = data?.filter(aspiration => aspiration.id !== aspirationId)
-
-        // Update state
-        setData(updatedData)
-        setFilteredData(updatedData)
-
-        // Optional: Tambahkan toast notification
-        console.log('Aspiration deleted successfully')
         Swal.fire({
           title: 'Deleted!',
-          text: 'Your file has been deleted.',
+          text: 'Your aspiration has been deleted.',
           icon: 'success'
         })
       }
     } catch (error) {
-      // Error handling
       console.error('Failed to delete aspiration:', error)
       Swal.fire({
         title: 'Error!',
@@ -189,6 +197,7 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
     }
   }
 
+  // Delete Multiple Aspirations
   const handleDeleteSelected = async () => {
     // Ambil ID yang dipilih
     const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id)
@@ -205,22 +214,15 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
       })
 
       if (result.isConfirmed) {
-        // Proses delete multiple
-        await Promise.all(selectedIds.map(id => aspirationActions.delete(id)))
-
-        // Filter out deleted items
-        const updatedData = data?.filter(aspiration => !selectedIds.includes(aspiration.id))
-
-        // Update state
-        setData(updatedData)
-        setFilteredData(updatedData)
+        // Proses delete multiple menggunakan context
+        await deleteMultipleAspirations(selectedIds)
 
         // Reset row selection
         table.resetRowSelection()
-        console.log('Aspiration deleted successfully')
+
         Swal.fire({
           title: 'Deleted!',
-          text: 'Your file has been deleted.',
+          text: 'Selected aspirations have been deleted.',
           icon: 'success'
         })
       }
@@ -228,7 +230,7 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
       console.error('Failed to delete selected aspirations', error)
       Swal.fire({
         title: 'Error!',
-        text: 'Something went wrong while deleting the aspiration.',
+        text: 'Something went wrong while deleting aspirations.',
         icon: 'error'
       })
     }
@@ -316,7 +318,7 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, filteredData]
+    [orderData, filteredData]
   )
 
   const table = useReactTable({
@@ -348,26 +350,29 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
-  useEffect(() => {
-    const filteredData = data?.filter(aspirations => {
-      if (status && aspirations.status.toLowerCase().replace(/\s+/g, '-') !== status) return false
-
-      return true
-    })
-
-    setFilteredData(filteredData)
-  }, [data, setFilteredData])
-
   return (
     <Card>
-      <CardContent
-        className={`${Object.keys(rowSelection).length > 0 ? 'flex justify-between' : 'flex justify-end'} flex-col sm:flex-row gap-4 flex-wrap items-start sm:items-center`}
-      >
-        {Object.keys(rowSelection).length > 0 && (
-          <Button variant='contained' onClick={handleDeleteSelected} startIcon={<i className='ri-delete-bin-7-line' />}>
-            Delete {Object.keys(rowSelection).length} Selected
+      <CardContent className={`flex justify-between flex-col sm:flex-row gap-4 flex-wrap items-start sm:items-center`}>
+        <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
+          <Button
+            color='secondary'
+            variant='outlined'
+            startIcon={<i className='ri-upload-2-line' />}
+            className='is-full sm:is-auto'
+            onClick={handleExport}
+          >
+            Export
           </Button>
-        )}
+          {Object.keys(rowSelection).length > 0 && (
+            <Button
+              variant='contained'
+              onClick={handleDeleteSelected}
+              startIcon={<i className='ri-delete-bin-7-line' />}
+            >
+              Delete {Object.keys(rowSelection).length} Selected
+            </Button>
+          )}
+        </div>
         <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
           <DebouncedInput
             value={globalFilter ?? ''}

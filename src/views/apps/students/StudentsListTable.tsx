@@ -3,10 +3,6 @@
 // React Imports
 import { useEffect, useState, useMemo } from 'react'
 
-// Next Imports
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
-
 import Swal from 'sweetalert2'
 
 // MUI Imports
@@ -17,6 +13,7 @@ import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
+import { styled } from '@mui/material/styles'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 
@@ -45,22 +42,20 @@ import type { RankingInfo } from '@tanstack/match-sorter-utils'
 // Type Imports
 import type { ThemeColor } from '@core/types'
 import type { UsersType } from '@/types/apps/userTypes'
-import type { Locale } from '@configs/i18n'
 
 // Component Imports
 import TableFilters from './TableFilters'
 import AddUserDrawer from './AddUserDrawer'
-import OptionMenu from '@core/components/option-menu'
 import CustomAvatar from '@core/components/mui/Avatar'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
-import { getLocalizedUrl } from '@/utils/i18n'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-import { schoolActions } from '@/libs/actions/actions'
+import { useAppContext } from '@/contexts/AppContext'
+import { exportUsersToExcel } from '@/libs/excel'
 
 declare module '@tanstack/table-core' {
   interface FilterFns {
@@ -75,13 +70,25 @@ type UsersTypeWithAction = UsersType & {
   action?: string
 }
 
-// type UserRoleType = {
+// type UserroleUserType = {
 //   [key: string]: { icon: string; color: string }
 // }
+
+type UserRoleType = {
+  [key: string]: { icon: string; color: string }
+}
+
+const userRoleObj: UserRoleType = {
+  teacher: { icon: 'ri-team-line', color: 'success' },
+  user: { icon: 'ri-user-3-line', color: 'primary' }
+}
 
 type UserStatusType = {
   [key: string]: ThemeColor
 }
+
+// Styled Components
+const Icon = styled('i')({})
 
 // Styled Components
 // const Icon = styled('i')({})
@@ -129,7 +136,7 @@ const DebouncedInput = ({
 }
 
 // Vars
-// const userRoleObj: UserRoleType = {
+// const userroleUserObj: UserroleUserType = {
 //   admin: { icon: 'ri-vip-crown-line', color: 'error' },
 //   author: { icon: 'ri-computer-line', color: 'warning' },
 //   editor: { icon: 'ri-edit-box-line', color: 'info' },
@@ -147,16 +154,57 @@ const columnHelper = createColumnHelper<UsersTypeWithAction>()
 
 const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
   // States
-  const [addUserOpen, setAddUserOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[tableData])
-  const [filteredData, setFilteredData] = useState(data)
   const [globalFilter, setGlobalFilter] = useState('')
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UsersType | undefined>(undefined)
 
-  // Hooks
-  const { lang: locale } = useParams()
+  const handleOpenCreateDrawer = () => {
+    setSelectedUser(undefined)
+    setIsDrawerOpen(true)
+  }
 
-  const handleDelete = async (schoolId: number) => {
+  const handleOpenUpdateDrawer = (user: UsersType) => {
+    setSelectedUser(user)
+    setIsDrawerOpen(true)
+  }
+
+  const [filters, setFilters] = useState({
+    roleUser: '',
+    school: '',
+    status: ''
+  })
+
+  // Gunakan context
+  const { users, fetchUsers, deleteUser, deleteMultipleUsers } = useAppContext()
+
+  const handleExport = async () => {
+    await exportUsersToExcel(users)
+  }
+
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  // Filtered data
+  const filteredData = useMemo(() => {
+    return users.filter(user => {
+      // Filter roleUser
+      const matchesroleUser = filters.roleUser ? user.roleUser === filters.roleUser : true
+
+      // Filter school
+      const matchesSchool = filters.school ? user.school?.title === filters.school : true
+
+      // Filter status
+      const matchesStatus = filters.status ? (filters.status === 'active' ? !user.blocked : user.blocked) : true
+
+      return matchesroleUser && matchesSchool && matchesStatus
+    })
+  }, [users, filters])
+
+  // Delete handlers (sama seperti sebelumnya)
+  const handleDelete = async (userId: number) => {
     try {
       const result = await Swal.fire({
         title: 'Are you sure?',
@@ -169,37 +217,25 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
       })
 
       if (result.isConfirmed) {
-        // Panggil action delete
-        await schoolActions.delete(schoolId)
+        await deleteUser(userId)
 
-        // Update data lokal dengan menghapus item yang sesuai
-        const updatedData = data?.filter(school => school.id !== schoolId)
-
-        // Update state
-        setData(updatedData)
-        setFilteredData(updatedData)
-
-        // Optional: Tambahkan toast notification
-        console.log('School deleted successfully')
         Swal.fire({
           title: 'Deleted!',
-          text: 'Your file has been deleted.',
+          text: 'User has been deleted.',
           icon: 'success'
         })
       }
     } catch (error) {
-      // Error handling
-      console.error('Failed to delete school:', error)
+      console.error('Failed to delete user:', error)
       Swal.fire({
         title: 'Error!',
-        text: 'Something went wrong while deleting the school.',
+        text: 'Something went wrong while deleting the user.',
         icon: 'error'
       })
     }
   }
 
   const handleDeleteSelected = async () => {
-    // Ambil ID yang dipilih
     const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id)
 
     try {
@@ -214,30 +250,20 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
       })
 
       if (result.isConfirmed) {
-        // Proses delete multiple
-        await Promise.all(selectedIds.map(id => schoolActions.delete(id)))
-
-        // Filter out deleted items
-        const updatedData = data?.filter(school => !selectedIds.includes(school.id))
-
-        // Update state
-        setData(updatedData)
-        setFilteredData(updatedData)
-
-        // Reset row selection
+        await deleteMultipleUsers(selectedIds)
         table.resetRowSelection()
-        console.log('School deleted successfully')
+
         Swal.fire({
           title: 'Deleted!',
-          text: 'Your file has been deleted.',
+          text: 'Selected users have been deleted.',
           icon: 'success'
         })
       }
     } catch (error) {
-      console.error('Failed to delete selected schools', error)
+      console.error('Failed to delete selected users', error)
       Swal.fire({
         title: 'Error!',
-        text: 'Something went wrong while deleting the school.',
+        text: 'Something went wrong while deleting users.',
         icon: 'error'
       })
     }
@@ -316,6 +342,20 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
           </Typography>
         )
       }),
+      columnHelper.accessor('roleUser', {
+        header: 'role',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-2'>
+            <Icon
+              className={classnames('text-[22px]', userRoleObj[row.original.roleUser].icon)}
+              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.roleUser].color}-main)` }}
+            />
+            <Typography className='capitalize' color='text.primary'>
+              {row.original.roleUser}
+            </Typography>
+          </div>
+        )
+      }),
       columnHelper.accessor('blocked', {
         header: 'Status',
         cell: ({ row }) => (
@@ -337,31 +377,16 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
             <IconButton size='small' onClick={() => handleDelete(row.original.id)}>
               <i className='ri-delete-bin-7-line text-textSecondary' />
             </IconButton>
-            <IconButton size='small'>
-              <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
-                <i className='ri-eye-line text-textSecondary' />
-              </Link>
+            <IconButton size='small' onClick={() => handleOpenUpdateDrawer(row.original)}>
+              <i className='ri-edit-box-line text-textSecondary' />
             </IconButton>
-            <OptionMenu
-              iconClassName='text-textSecondary'
-              options={[
-                {
-                  text: 'Download',
-                  icon: 'ri-download-line'
-                },
-                {
-                  text: 'Edit',
-                  icon: 'ri-edit-box-line'
-                }
-              ]}
-            />
           </div>
         ),
         enableSorting: false
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, filteredData]
+    [tableData, filteredData]
   )
 
   const table = useReactTable({
@@ -397,7 +422,7 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
     <>
       <Card>
         <CardHeader title='Filters' className='pbe-4' />
-        <TableFilters setData={setFilteredData} tableData={data} />
+        <TableFilters onFilterChange={setFilters} tableData={users} />
         <Divider />
         <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
           <Button
@@ -405,9 +430,19 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
             variant='outlined'
             startIcon={<i className='ri-upload-2-line' />}
             className='is-full sm:is-auto'
+            onClick={handleExport}
           >
             Export
           </Button>
+          {Object.keys(rowSelection).length > 0 && (
+            <Button
+              variant='contained'
+              onClick={handleDeleteSelected}
+              startIcon={<i className='ri-delete-bin-7-line' />}
+            >
+              Delete {Object.keys(rowSelection).length} Selected
+            </Button>
+          )}
           <div className='flex items-center gap-x-4 max-sm:gap-y-4 is-full flex-col sm:is-auto sm:flex-row'>
             <DebouncedInput
               value={globalFilter ?? ''}
@@ -415,18 +450,9 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
               placeholder='Search User'
               className='is-full sm:is-auto'
             />
-            <Button variant='contained' onClick={() => setAddUserOpen(!addUserOpen)} className='is-full sm:is-auto'>
+            <Button variant='contained' onClick={handleOpenCreateDrawer} className='is-full sm:is-auto'>
               Add New User
             </Button>
-            {Object.keys(rowSelection).length > 0 && (
-              <Button
-                variant='contained'
-                onClick={handleDeleteSelected}
-                startIcon={<i className='ri-delete-bin-7-line' />}
-              >
-                Delete {Object.keys(rowSelection).length} Selected
-              </Button>
-            )}
           </div>
         </div>
         <div className='overflow-x-auto'>
@@ -501,10 +527,9 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         />
       </Card>
       <AddUserDrawer
-        open={addUserOpen}
-        handleClose={() => setAddUserOpen(!addUserOpen)}
-        userData={data}
-        setData={setData}
+        open={isDrawerOpen}
+        handleClose={() => setIsDrawerOpen(false)}
+        initialData={selectedUser} // Kirim data school jika update
       />
     </>
   )

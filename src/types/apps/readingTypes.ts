@@ -4,6 +4,7 @@ export type ReadingType = {
   content: any
   writter: string
   updatedAt: string
+  createdAt: string
   image?: {
     data?: {
       attributes?: {

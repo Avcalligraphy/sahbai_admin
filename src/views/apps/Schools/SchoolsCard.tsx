@@ -51,8 +51,6 @@ const SchoolsCard = () => {
     fetchSchools()
   }, [])
 
-  console.log('sekolah', schools)
-
   return (
     <Card>
       <CardContent>
@@ -69,8 +67,8 @@ const SchoolsCard = () => {
                 <Typography variant='h4'>{schools.length}</Typography>
                 <Typography>Schools</Typography>
               </div>
-              <CustomAvatar variant='rounded' size={42}>
-                <i className={classnames('text-[26px]', 'ri-user-3-line')} />
+              <CustomAvatar color='primary' skin='light' variant='rounded' size={42}>
+                <i className={classnames('text-[26px]', 'ri-school-line')} />
               </CustomAvatar>
             </div>
             {/* {isBelowMdScreen && !isBelowSmScreen && index < data.length - 2 && (

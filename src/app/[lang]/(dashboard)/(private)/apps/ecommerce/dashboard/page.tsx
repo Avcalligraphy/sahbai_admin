@@ -2,7 +2,7 @@
 import Grid from '@mui/material/Grid'
 
 // Components Imports
-import Sales from '@views/dashboards/ecommerce/Sales'
+// import Sales from '@views/dashboards/ecommerce/Sales'
 import CardStatWithImage from '@components/card-statistics/Character'
 import WeeklySalesBg from '@views/dashboards/ecommerce/WeeklySalesBg'
 import TotalVisits from '@views/dashboards/ecommerce/TotalVisits'
@@ -41,9 +41,9 @@ const DashboardECommerce = async () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12} md={6}>
+      {/* <Grid item xs={12} md={6}>
         <Sales />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} sm={6} md={3}>
         <CardStatWithImage
           stats='8.14k'

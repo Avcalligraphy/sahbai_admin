@@ -3,7 +3,6 @@ import { useParams } from 'next/navigation'
 
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
-import Chip from '@mui/material/Chip'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
@@ -13,7 +12,7 @@ import type { getDictionary } from '@/utils/getDictionary'
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
 
 // Component Imports
-import { Menu, SubMenu, MenuItem, MenuSection } from '@menu/vertical-menu'
+import { Menu, MenuItem } from '@menu/vertical-menu'
 
 // import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
@@ -82,7 +81,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        <SubMenu
+        {/* <SubMenu
           label={dictionary['navigation'].dashboards}
           icon={<i className='ri-home-smile-line' />}
           suffix={<Chip label='5' size='small' color='error' />}
@@ -92,7 +91,15 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
           <MenuItem href={`/${locale}/dashboards/ecommerce`}>{dictionary['navigation'].eCommerce}</MenuItem>
           <MenuItem href={`/${locale}/dashboards/academy`}>{dictionary['navigation'].academy}</MenuItem>
           <MenuItem href={`/${locale}/dashboards/logistics`}>{dictionary['navigation'].logistics}</MenuItem>
-        </SubMenu>
+        </SubMenu> */}
+        <MenuItem
+          href={`/${locale}/dashboards/crm`}
+          icon={<i className='ri-home-smile-line' />}
+          exactMatch={false}
+          activeUrl='/dashboards/crm'
+        >
+          {dictionary['navigation'].crm}
+        </MenuItem>
         <MenuItem
           href={`/${locale}/apps/aspirations`}
           icon={<i className='ri-apps-line' />}
@@ -131,17 +138,18 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
           exactMatch={false}
           activeUrl='/apps/students'
         >
-          Students
+          Users
         </MenuItem>
+
         <MenuItem
-          href={`/${locale}/apps/ecommerce/orders/list`}
-          icon={<i className='ri-user-add-line' />}
+          href={`/${locale}/pages/user-profile`}
+          icon={<i className='ri-settings-5-line' />}
           exactMatch={false}
-          activeUrl='/apps/email'
+          activeUrl='/pages/user-profile'
         >
-          Teachers
+          Setting
         </MenuItem>
-        <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
+        {/* <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
           <MenuItem href='/front-pages/landing-page' target='_blank'>
             {dictionary['navigation'].landing}
           </MenuItem>
@@ -437,7 +445,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
             </SubMenu>
             <MenuItem disabled>{dictionary['navigation'].disabledMenu}</MenuItem>
           </SubMenu>
-        </MenuSection>
+        </MenuSection> */}
       </Menu>
       {/* <Menu
         popoutMenuOffset={{ mainAxis: 17 }}
