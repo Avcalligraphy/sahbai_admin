@@ -1,54 +1,99 @@
-// React Imports
-import type { ReactElement } from 'react'
+import { redirect } from 'next/navigation'
 
-// Next Imports
 import dynamic from 'next/dynamic'
 
+import { getServerSession } from 'next-auth/next'
+
+import { authOptions } from '@/libs/auth'
+
+// Next Imports
+
 // Type Imports
-import type { Data } from '@/types/pages/profileTypes'
+import type { ProfileHeaderType, ProfileTabType } from '@/types/pages/profileTypes'
 
 // Component Imports
 import UserProfile from '@views/pages/user-profile'
 
-// Data Imports
-import { getProfileData } from '@/app/server/actions'
-
 const ProfileTab = dynamic(() => import('@views/pages/user-profile/profile'))
-const TeamsTab = dynamic(() => import('@views/pages/user-profile/teams'))
-const ProjectsTab = dynamic(() => import('@views/pages/user-profile/projects'))
-const ConnectionsTab = dynamic(() => import('@views/pages/user-profile/connections'))
-
-// Vars
-const tabContentList = (data?: Data): { [key: string]: ReactElement } => ({
-  profile: <ProfileTab data={data?.users.profile} />,
-  teams: <TeamsTab data={data?.users.teams} />,
-  projects: <ProjectsTab data={data?.users.projects} />,
-  connections: <ConnectionsTab data={data?.users.connections} />
-})
-
-/**
- * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
- * ! `.env` file found at root of your project and also update the API endpoints like `/pages/profile` in below example.
- * ! Also, remove the above server action import and the action itself from the `src/app/server/actions.ts` file to clean up unused code
- * ! because we've used the server action for getting our static data.
- */
-
-/* const getProfileData = async () => {
-  // Vars
-  const res = await fetch(`${process.env.API_URL}/pages/profile`)
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch profileData')
-  }
-
-  return res.json()
-} */
 
 const ProfilePage = async () => {
-  // Vars
-  const data = await getProfileData()
+  const session = await getServerSession(authOptions)
 
-  return <UserProfile data={data} tabContentList={tabContentList(data)} />
+  if (!session) {
+    redirect('/login')
+  }
+
+  // Contoh transformasi data untuk ProfileHeaderType
+  const headerData: ProfileHeaderType = {
+    name: session?.user?.name || 'Unknown',
+    email: session?.user?.email || 'Unknown',
+    role: session.user.role,
+    designation: session.user.role,
+    location: 'Not specified', // Tambahkan logika sesuai kebutuhan
+    joiningDate: new Date().toLocaleDateString() // Contoh
+  }
+
+  // Contoh transformasi data untuk ProfileTabType
+  const profileData: ProfileTabType = {
+    name: session.user.name || 'Unknown',
+    email: session.user.email || 'Unknown',
+    role: session.user.role,
+    phone: session.user.phone || 'Not specified',
+    about: [
+      {
+        title: 'Full Name',
+        value: session.user.name || 'Not specified',
+        icon: 'ri-user-line'
+      },
+      {
+        title: 'Email',
+        value: session.user.email || 'Not specified',
+        icon: 'ri-mail-line'
+      },
+      {
+        title: 'Role',
+        value: session.user.role || 'Not specified',
+        icon: 'ri-shield-user-line'
+      }
+    ],
+    contacts: [
+      {
+        title: 'Email',
+        value: session.user.email || 'Not specified',
+        icon: 'ri-mail-send-line'
+      },
+      {
+        title: 'Phone',
+        value: session.user.phone || 'Not specified',
+        icon: 'ri-phone-line'
+      }
+    ],
+    teams: [
+      {
+        name: 'Superadmin',
+        role: 'Member',
+        icon: 'ri-code-line'
+      }
+    ],
+    overview: [
+      {
+        title: 'Language',
+        value: 'English',
+        icon: 'ri-global-line'
+      },
+      {
+        title: 'Country',
+        value: 'Indonesia',
+        icon: 'ri-map-pin-line'
+      }
+    ]
+  }
+
+  const tabContentList = {
+    profile: <ProfileTab data={profileData} />
+  }
+
+  return <UserProfile data={headerData} tabContentList={tabContentList} />
 }
 
 export default ProfilePage

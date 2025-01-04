@@ -9,25 +9,27 @@ import Button from '@mui/material/Button'
 import type { ProfileHeaderType } from '@/types/pages/profileTypes'
 
 const UserProfileHeader = ({ data }: { data?: ProfileHeaderType }) => {
+  console.log('data profile', data)
+
   return (
     <Card>
-      <CardMedia image={data?.coverImg} className='bs-[250px]' />
+      <CardMedia image='/images/pages/profile-banner.png' className='bs-[250px]' />
       <CardContent className='flex justify-center flex-col items-center gap-6 md:items-end md:flex-row !pt-0 md:justify-start'>
         <div className='flex rounded-bs-xl mbs-[-30px] mli-[-5px] border-[5px] border-be-0 border-backgroundPaper bg-backgroundPaper'>
-          <img height={120} width={120} src={data?.profileImg} className='rounded' alt='Profile Background' />
+          <img height={120} width={120} src='/images/avatars/1.png' className='rounded' alt='Profile Background' />
         </div>
         <div className='flex is-full flex-wrap justify-start flex-col items-center sm:flex-row sm:justify-between sm:items-end gap-5'>
           <div className='flex flex-col items-center sm:items-start gap-2'>
-            <Typography variant='h4'>{data?.fullName}</Typography>
+            <Typography variant='h4'>{data?.name}</Typography>
             <div className='flex flex-wrap gap-6 gap-y-3 justify-center sm:justify-normal min-bs-[38px]'>
               <div className='flex items-center gap-2'>
-                {data?.designationIcon && <i className={data?.designationIcon} />}
-                <Typography className='font-medium'>{data?.designation}</Typography>
+                {data?.email && <i className='ri-mail-line' />}
+                <Typography className='font-medium'>{data?.email}</Typography>
               </div>
-              <div className='flex items-center gap-2'>
+              {/* <div className='flex items-center gap-2'>
                 <i className='ri-map-pin-line' />
                 <Typography className='font-medium'>{data?.location}</Typography>
-              </div>
+              </div> */}
               <div className='flex items-center gap-2'>
                 <i className='ri-calendar-line' />
                 <Typography className='font-medium'>{data?.joiningDate}</Typography>

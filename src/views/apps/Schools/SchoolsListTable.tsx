@@ -130,7 +130,7 @@ const DebouncedInput = ({
 const columnHelper = createColumnHelper<SchoolsTypeWithAction>()
 
 const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
-  const { schools, deleteSchool, deleteMultipleSchools } = useAppContext()
+  const { schools, deleteSchool, deleteMultipleSchools, deleteUser, deleteMultipleUsers } = useAppContext()
 
   // States
   const [rowSelection, setRowSelection] = useState({})
@@ -162,15 +162,12 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
         ? Object.values(school).some(value => String(value).toLowerCase().includes(globalFilter.toLowerCase()))
         : true
 
-      // Filter berdasarkan status
-      const matchesStatus = status ? school.schoolsStatus.toLowerCase().replace(/\s+/g, '-') === status : true
-
-      return matchesGlobalFilter && matchesStatus
+      return matchesGlobalFilter
     })
-  }, [schools, globalFilter, status])
+  }, [schools, globalFilter])
 
   // Handler Delete Single
-  const handleDelete = async (schoolId: number) => {
+  const handleDelete = async (schoolId: number, schoolUser: number) => {
     try {
       const result = await Swal.fire({
         title: 'Are you sure?',
@@ -185,6 +182,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       if (result.isConfirmed) {
         // Gunakan method delete dari context
         await deleteSchool(schoolId)
+        await deleteUser(schoolUser)
 
         Swal.fire({
           title: 'Deleted!',
@@ -207,6 +205,11 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
     // Ambil ID yang dipilih
     const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id)
 
+    const selectedIdsUser = table
+      .getSelectedRowModel()
+      .rows.map(row => row.original.user_school?.data?.id)
+      .filter((id): id is number => id !== undefined)
+
     try {
       const result = await Swal.fire({
         title: 'Are you sure?',
@@ -221,6 +224,7 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
       if (result.isConfirmed) {
         // Gunakan method delete multiple dari context
         await deleteMultipleSchools(selectedIds)
+        await deleteMultipleUsers(selectedIdsUser)
 
         // Reset row selection
         table.resetRowSelection()
@@ -304,7 +308,10 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center gap-0.5'>
-            <IconButton size='small' onClick={() => handleDelete(row.original.id)}>
+            <IconButton
+              size='small'
+              onClick={() => handleDelete(row.original.id, row.original.user_school?.data?.id ?? 0)}
+            >
               <i className='ri-delete-bin-7-line text-textSecondary' />
             </IconButton>
             <IconButton size='small' onClick={() => handleOpenUpdateDrawer(row.original)}>

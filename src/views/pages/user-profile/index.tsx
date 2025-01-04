@@ -11,13 +11,19 @@ import TabContext from '@mui/lab/TabContext'
 import TabPanel from '@mui/lab/TabPanel'
 
 // Type Imports
-import type { Data } from '@/types/pages/profileTypes'
+import type { ProfileHeaderType } from '@/types/pages/profileTypes'
 
 // Component Imports
 import UserProfileHeader from './UserProfileHeader'
 import CustomTabList from '@core/components/mui/TabList'
 
-const UserProfile = ({ tabContentList, data }: { tabContentList: { [key: string]: ReactElement }; data?: Data }) => {
+const UserProfile = ({
+  tabContentList,
+  data
+}: {
+  tabContentList: { [key: string]: ReactElement }
+  data?: ProfileHeaderType
+}) => {
   // States
   const [activeTab, setActiveTab] = useState('profile')
 
@@ -28,7 +34,7 @@ const UserProfile = ({ tabContentList, data }: { tabContentList: { [key: string]
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
-        <UserProfileHeader data={data?.profileHeader} />
+        <UserProfileHeader data={data} />
       </Grid>
       {activeTab === undefined ? null : (
         <Grid item xs={12} className='flex flex-col gap-6'>
@@ -42,33 +48,6 @@ const UserProfile = ({ tabContentList, data }: { tabContentList: { [key: string]
                   </div>
                 }
                 value='profile'
-              />
-              <Tab
-                label={
-                  <div className='flex items-center gap-2'>
-                    <i className='ri-team-line text-lg' />
-                    Teams
-                  </div>
-                }
-                value='teams'
-              />
-              <Tab
-                label={
-                  <div className='flex items-center gap-2'>
-                    <i className='ri-computer-line text-lg' />
-                    Projects
-                  </div>
-                }
-                value='projects'
-              />
-              <Tab
-                label={
-                  <div className='flex items-center gap-2'>
-                    <i className='ri-link-m text-lg' />
-                    Connections
-                  </div>
-                }
-                value='connections'
               />
             </CustomTabList>
 

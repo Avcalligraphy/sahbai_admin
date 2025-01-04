@@ -87,8 +87,8 @@ const Login = ({ mode }: { mode: Mode }) => {
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
     defaultValues: {
-      email: 'admin@materialize.com',
-      password: 'admin'
+      email: 'admin@sahbai.com',
+      password: '@Sahbai12345678'
     }
   })
 
@@ -111,16 +111,14 @@ const Login = ({ mode }: { mode: Mode }) => {
       redirect: false
     })
 
-    if (res && res.ok && res.error === null) {
+    if (res && res.ok) {
       // Vars
       const redirectURL = searchParams.get('redirectTo') ?? '/'
 
       router.replace(getLocalizedUrl(redirectURL, locale as Locale))
     } else {
       if (res?.error) {
-        const error = JSON.parse(res.error)
-
-        setErrorState(error)
+        setErrorState({ message: [res.error] })
       }
     }
   }

@@ -1,3 +1,5 @@
+'use client'
+
 // Next Imports
 import { useParams } from 'next/navigation'
 
@@ -6,6 +8,8 @@ import { useTheme } from '@mui/material/styles'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
+
+import { useSession } from 'next-auth/react'
 
 // Type Imports
 import type { getDictionary } from '@/utils/getDictionary'
@@ -52,11 +56,19 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
   const params = useParams()
   const { isBreakpointReached } = useVerticalNav()
 
+  // Tambahkan useSession untuk mendapatkan role user
+  const { data: session } = useSession()
+
   // Vars
   const { transitionDuration } = verticalNavOptions
   const { lang: locale } = params
 
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
+
+  // Fungsi untuk mengecek apakah menu harus ditampilkan
+  const shouldShowMenuItem = (requiredRole: 'admin' | 'school' = 'admin') => {
+    return session?.user?.role === requiredRole || session?.user?.role === 'admin'
+  }
 
   return (
     // eslint-disable-next-line lines-around-comment
@@ -124,14 +136,16 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         >
           Reports
         </MenuItem>
-        <MenuItem
-          href={`/${locale}/apps/schools`}
-          icon={<i className='ri-school-line' />}
-          exactMatch={false}
-          activeUrl='/apps/schools'
-        >
-          Schools
-        </MenuItem>
+        {shouldShowMenuItem() && (
+          <MenuItem
+            href={`/${locale}/apps/schools`}
+            icon={<i className='ri-school-line' />}
+            exactMatch={false}
+            activeUrl='/apps/schools'
+          >
+            Schools
+          </MenuItem>
+        )}
         <MenuItem
           href={`/${locale}/apps/students`}
           icon={<i className='ri-team-line' />}

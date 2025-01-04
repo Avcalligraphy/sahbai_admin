@@ -1,31 +1,36 @@
 // Data Imports
+import { redirect } from 'next/navigation'
+
+import { getServerSession } from 'next-auth'
+
 import { getSchools } from '@/app/api/apps/schools/schools'
+
 import SchoolsList from '@/views/apps/Schools'
 
-/**
- * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
- * ! `.env` file found at root of your project and also update the API endpoints like `/apps/invoice` in below example.
- * ! Also, remove the above server action import and the action itself from the `src/app/server/actions.ts` file to clean up unused code
- * ! because we've used the server action for getting our static data.
- */
+import { authOptions } from '@/libs/auth'
 
-/* const getInvoiceData = async () => {
-  // Vars
-  const res = await fetch(`${process.env.API_URL}/apps/invoice`)
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch invoice data')
-  }
-
-  return res.json()
-} */
+import { getLocalizedUrl } from '@/utils/i18n'
+import themeConfig from '@/configs/themeConfig'
 
 const SchoolsApp = async () => {
-  // Vars
-  const { data, error } = await getSchools()
+  // Ambil session dari server
+  const session = await getServerSession(authOptions)
 
-  console.log(error)
-  console.log(data)
+  // Cek jika tidak ada session
+  if (!session) {
+    redirect('/login')
+  }
+
+  // Cek role user
+  if (session.user.role === 'school') {
+    // Redirect ke homepage jika user adalah school
+    const homePage = getLocalizedUrl(themeConfig.homePageUrl, 'en')
+
+    redirect(homePage)
+  }
+
+  // Ambil data schools
+  const { data } = await getSchools()
 
   return <SchoolsList invoiceData={data} />
 }

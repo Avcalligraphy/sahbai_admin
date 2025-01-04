@@ -1,3 +1,24 @@
+import { getServerSession } from 'next-auth/next'
+
+import { authOptions } from '@/libs/auth'
+
+export async function getAuthToken() {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session) {
+      // Fallback atau throw error
+      return process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+    }
+
+    return session.jwt
+  } catch (error) {
+    console.error('Token retrieval error:', error)
+
+    return process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+  }
+}
+
 export interface AspirationPayload {
   title: string
   description: string
@@ -7,12 +28,13 @@ export interface AspirationPayload {
 export const aspirationActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/aspirations?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -34,11 +56,12 @@ export const aspirationActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+      const token = await getAuthToken()
 
       const response = await fetch(`${apiURL}/api/aspirations/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+          Authorization: `Bearer ${token}`
         }
       })
 
@@ -63,12 +86,13 @@ export const aspirationActions = {
 export const readingActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/blogs?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -90,11 +114,12 @@ export const readingActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+      const token = await getAuthToken()
 
       const response = await fetch(`${apiURL}/api/blogs/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+          Authorization: `Bearer ${token}`
         }
       })
 
@@ -124,12 +149,13 @@ export interface SchoolPayload {
 export const schoolActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/schools?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -148,19 +174,23 @@ export const schoolActions = {
   },
 
   // Tambahkan method create baru
-  create: async (schoolData: { title: string; address: string }) => {
+  create: async (schoolData: { title: string; address: string; user_school: number }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
-    const response = await fetch(`${apiURL}/api/schools`, {
+    const response = await fetch(`${apiURL}/api/schools?populate=*`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         data: {
           title: schoolData.title,
-          address: schoolData.address
+          address: schoolData.address,
+          user_school: {
+            connect: [{ id: schoolData.user_school }]
+          }
         }
       })
     })
@@ -182,12 +212,13 @@ export const schoolActions = {
 
   update: async (id: number, data: { title: string; address: string }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
-    const response = await fetch(`${apiURL}/api/schools/${id}`, {
+    const response = await fetch(`${apiURL}/api/schools/${id}?populate=*`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         data: {
@@ -215,11 +246,12 @@ export const schoolActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+      const token = await getAuthToken()
 
       const response = await fetch(`${apiURL}/api/schools/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+          Authorization: `Bearer ${token}`
         }
       })
 
@@ -259,12 +291,13 @@ export interface UserPayload {
 export const userActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/users?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -332,6 +365,79 @@ export const userActions = {
       }
     }
   },
+
+  createSchoolAdmin: async (userData: { username?: string; email?: string; password?: string; phone?: string }) => {
+    const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+
+    const response = await fetch(`${apiURL}/api/auth/local/register?populate=*`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone,
+        roleUser: 'school', // Role khusus untuk admin sekolah
+        blocked: false
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+
+      throw new Error(errorData.error?.message || 'Failed to create school admin')
+    }
+
+    const result = await response.json()
+
+    return {
+      id: result.user.id,
+      ...result.user
+    }
+  },
+
+  updateSchoolAdmin: async (
+    id: number,
+    userData: {
+      username?: string
+      email?: string
+      phone?: string
+      password?: string
+    }
+  ) => {
+    const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
+
+    const response = await fetch(`${apiURL}/api/users/${id}?populate=*`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        username: userData.username,
+        email: userData.email,
+        phone: userData.phone,
+        password: userData.password
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+
+      throw new Error(errorData.error?.message || 'Failed to update school admin')
+    }
+
+    const result = await response.json()
+
+    return {
+      id: result.id,
+      ...result
+    }
+  },
+
   update: async (
     id: number,
     userData: {
@@ -346,12 +452,13 @@ export const userActions = {
     }
   ) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/users/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         email: userData.email,
@@ -382,12 +489,11 @@ export const userActions = {
 
   // update: async (id: number, data: { title: string; address: string }) => {
   //   const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-
   //   const response = await fetch(`${apiURL}/api/schools/${id}`, {
   //     method: 'PUT',
   //     headers: {
   //       'Content-Type': 'application/json',
-  //       Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+  //       Authorization: `Bearer ${token}`
   //     },
   //     body: JSON.stringify({
   //       data: {
@@ -415,11 +521,12 @@ export const userActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+      const token = await getAuthToken()
 
       const response = await fetch(`${apiURL}/api/users/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+          Authorization: `Bearer ${token}`
         }
       })
 
@@ -444,12 +551,13 @@ export const userActions = {
 export const reportActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/reports?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       }
     })
 
@@ -486,12 +594,13 @@ export const reportActions = {
     user: number
   }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const response = await fetch(`${apiURL}/api/reports?populate=*&pagination[pageSize]=100`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         data: {
@@ -551,6 +660,7 @@ export const reportActions = {
     }
   ) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = await getAuthToken()
 
     const updatePayload: any = {}
 
@@ -583,7 +693,7 @@ export const reportActions = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         data: updatePayload
@@ -611,11 +721,12 @@ export const reportActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+      const token = await getAuthToken()
 
       const response = await fetch(`${apiURL}/api/reports/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+          Authorization: `Bearer ${token}`
         }
       })
 

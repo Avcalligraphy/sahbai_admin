@@ -76,8 +76,26 @@ type AppContextType = {
   schoolsLoading: boolean
   schoolsError: string | null
   fetchSchools: () => Promise<void>
-  createSchool: (data: { title: string; address: string; schoolsStatus?: string }) => Promise<void>
-  updateSchool: (data: { id?: number; title: string; address: string }) => Promise<void>
+  createSchool: (data: {
+    title: string
+    address: string
+    schoolsStatus?: string
+    adminName?: string
+    adminEmail?: string
+    adminPassword?: string
+    adminPhone?: string
+    user_school?: number
+  }) => Promise<void>
+  updateSchool: (data: {
+    id?: number
+    title: string
+    address: string
+    adminName?: string
+    adminEmail?: string
+    adminPassword?: string
+    adminPhone?: string
+    user_school: number
+  }) => Promise<void>
   deleteSchool: (id: number) => Promise<void>
   deleteMultipleSchools: (ids: number[]) => Promise<void>
 
@@ -271,29 +289,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
-  const createSchool = async (data: { title: string; address: string }) => {
+  const createSchool = async (data: {
+    title: string
+    address: string
+    adminName?: string
+    adminEmail?: string
+    adminPassword?: string
+    adminPhone?: string
+    user_school?: number
+  }) => {
     try {
-      const newSchool = await schoolActions.create(data)
+      // Buat user admin sekolah terlebih dahulu
+      const schoolAdmin = await userActions.createSchoolAdmin({
+        username: data.adminName,
+        email: data.adminEmail,
+        password: data.adminPassword,
+        phone: data.adminPhone
+      })
 
-      // Tambahkan school baru ke state
+      // Buat sekolah dengan menggunakan ID user yang baru dibuat
+      const newSchool = await schoolActions.create({
+        title: data.title,
+        address: data.address,
+        user_school: schoolAdmin.id // Gunakan ID user yang baru dibuat
+      })
+
+      // Update state schools
       setSchools(prev => [
         ...prev,
         {
           ...newSchool,
-
-          // Tambahkan default values jika diperlukan
-          users_permissions_users: { data: [] },
+          user_school: {
+            data: {
+              id: schoolAdmin.id,
+              attributes: schoolAdmin
+            }
+          },
+          users_permissions_users: {
+            data: [
+              {
+                id: schoolAdmin.id,
+                attributes: schoolAdmin
+              }
+            ]
+          },
           teachers: { data: [] },
-          schoolsStatus: 'Active' // Atau status default
+          schoolsStatus: 'Active'
         }
       ])
+
+      return newSchool
     } catch (error) {
+      // Hapus user yang sudah dibuat jika proses gagal
+      if (error instanceof Error) {
+        console.error('Failed to create school:', error)
+
+        // Tambahkan logika untuk menghapus user jika sekolah gagal dibuat
+        // Anda bisa menambahkan metode deleteUser di userActions jika diperlukan
+      }
+
       setSchoolsError(error instanceof Error ? error.message : 'Failed to create school')
       throw error
     }
   }
 
-  const updateSchool = async (data: { id?: number; title: string; address: string }) => {
+  const updateSchool = async (data: {
+    id?: number
+    title: string
+    address: string
+    adminName?: string
+    adminEmail?: string
+    adminPhone?: string
+    user_school: number
+  }) => {
     try {
       if (!data.id) {
         throw new Error('School ID is required for update')
@@ -304,8 +372,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         address: data.address
       })
 
-      // Update state
-      setSchools(prev => prev.map(school => (school.id === data.id ? { ...school, ...updatedSchool } : school)))
+      console.log('Updated School Result:', updatedSchool)
+
+      const updateAdminSchool = await userActions.updateSchoolAdmin(data.user_school, {
+        username: data.adminName,
+        email: data.adminEmail,
+        phone: data.adminPhone
+      })
+
+      console.log('Updated Admin Result:', updateAdminSchool)
+
+      setSchools(prev =>
+        prev.map(school =>
+          school.id === data.id
+            ? {
+                ...school,
+                ...updatedSchool,
+                user_school: {
+                  data: {
+                    id: data.user_school,
+                    attributes: updateAdminSchool
+                  }
+                },
+                users_permissions_users: {
+                  data: school.users_permissions_users.data.map(user =>
+                    user.id === data.user_school
+                      ? {
+                          ...user,
+                          attributes: updateAdminSchool
+                        }
+                      : user
+                  )
+                }
+              }
+            : school
+        )
+      )
+
+      return updatedSchool
     } catch (error) {
       setSchoolsError(error instanceof Error ? error.message : 'Failed to update school')
       throw error

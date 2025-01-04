@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import Swal from 'sweetalert2'
 
@@ -23,18 +23,26 @@ import type { SchoolsType } from '@/types/apps/schoolsTypes'
 type Props = {
   open: boolean
   handleClose: () => void
-  initialData?: SchoolsType // Tambahkan untuk edit
+  initialData?: SchoolsType
 }
 
 // Form Validation Type
 type FormValidateType = {
   title: string
   address: string
+  adminName?: string
+  adminEmail?: string
+  adminPassword?: string
+  adminPhone?: string
+  user_school?: number
 }
 
 const AddSchool = ({ open, handleClose, initialData }: Props) => {
   // Use App Context
-  const { createSchool, updateSchool, schoolsLoading, schoolsError } = useAppContext()
+  const { createSchool, schoolsLoading, schoolsError, updateSchool } = useAppContext()
+
+  // State untuk mengontrol loading
+  const [isLoading, setIsLoading] = useState(false)
 
   // Hooks
   const {
@@ -45,7 +53,11 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
   } = useForm<FormValidateType>({
     defaultValues: {
       title: '',
-      address: ''
+      address: '',
+      adminName: '',
+      adminEmail: '',
+      adminPhone: '',
+      user_school: 0
     }
   })
 
@@ -54,27 +66,41 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
     if (initialData && open) {
       reset({
         title: initialData.title,
-        address: initialData.address
+        address: initialData.address,
+        adminName: initialData.user_school?.data?.attributes?.username,
+        adminEmail: initialData.user_school?.data?.attributes?.email,
+        adminPhone: initialData.user_school?.data?.attributes?.phone,
+        user_school: initialData.user_school?.data?.id || 0
       })
     } else if (!initialData && open) {
       // Reset form jika tidak ada initial data
       reset({
         title: '',
-        address: ''
+        address: '',
+        adminName: '',
+        adminEmail: '',
+        adminPassword: '',
+        adminPhone: ''
       })
     }
   }, [initialData, open, reset])
 
   // Submit Handler
   const onSubmit = async (data: FormValidateType) => {
+    setIsLoading(true)
+
     try {
       // Cek apakah ini update atau create
       if (initialData) {
-        // Update
+        // Update School
         await updateSchool({
           id: initialData.id,
           title: data.title,
-          address: data.address
+          address: data.address,
+          adminName: data.adminName,
+          adminEmail: data.adminEmail,
+          adminPhone: data.adminPhone,
+          user_school: initialData.user_school?.data?.id || 0
         })
 
         Swal.fire({
@@ -84,15 +110,19 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
           timer: 1500
         })
       } else {
-        // Create
+        // Create School dengan admin
         await createSchool({
           title: data.title,
-          address: data.address
+          address: data.address,
+          adminName: data.adminName,
+          adminEmail: data.adminEmail,
+          adminPassword: data.adminPassword,
+          adminPhone: data.adminPhone
         })
 
         Swal.fire({
           icon: 'success',
-          title: 'School Created Successfully',
+          title: 'School and Admin Created Successfully',
           showConfirmButton: false,
           timer: 1500
         })
@@ -102,14 +132,15 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
       reset()
       handleClose()
     } catch (error) {
-      // Error handling sudah di-handle di context
       console.error('Failed to save school', error)
 
       Swal.fire({
         icon: 'error',
         title: 'Oops...',
-        text: 'Something went wrong!'
+        text: error instanceof Error ? error.message : 'Something went wrong!'
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -126,7 +157,7 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
       variant='temporary'
       onClose={handleReset}
       ModalProps={{ keepMounted: true }}
-      sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
+      sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 500 } } }}
     >
       <div className='flex items-center justify-between pli-5 plb-4'>
         <Typography variant='h5'>{initialData ? 'Update School' : 'Add New School'}</Typography>
@@ -145,7 +176,7 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-5'>
-          {/* Title Field */}
+          {/* School Details */}
           <Controller
             name='title'
             control={control}
@@ -168,7 +199,6 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
             )}
           />
 
-          {/* Address Field */}
           <Controller
             name='address'
             control={control}
@@ -193,10 +223,110 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
             )}
           />
 
+          {/* Hanya tampilkan field admin jika bukan update */}
+          <>
+            <Typography variant='h6' className='mt-4'>
+              School Admin Details
+            </Typography>
+
+            <Controller
+              name='adminName'
+              control={control}
+              rules={{
+                required: 'Admin name is required',
+                minLength: {
+                  value: 3,
+                  message: 'Name must be at least 3 characters'
+                }
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label='Admin Name'
+                  placeholder='Enter admin name'
+                  error={!!errors.adminName}
+                  helperText={errors.adminName?.message}
+                />
+              )}
+            />
+
+            <Controller
+              name='adminEmail'
+              control={control}
+              rules={{
+                required: 'Admin email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Invalid email address'
+                }
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  type='email'
+                  label='Admin Email'
+                  placeholder='Enter admin email'
+                  error={!!errors.adminEmail}
+                  helperText={errors.adminEmail?.message}
+                />
+              )}
+            />
+
+            {!initialData && (
+              <Controller
+                name='adminPassword'
+                control={control}
+                rules={{
+                  required: 'Password is required',
+                  minLength: {
+                    value: 8,
+                    message: 'Password must be at least 8 characters'
+                  }
+                }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    type='password'
+                    label='Admin Password'
+                    placeholder='Enter admin password'
+                    error={!!errors.adminPassword}
+                    helperText={errors.adminPassword?.message}
+                  />
+                )}
+              />
+            )}
+
+            <Controller
+              name='adminPhone'
+              control={control}
+              rules={{
+                required: 'Phone number is required',
+                pattern: {
+                  value: /^[0-9]{10,12}$/,
+                  message: 'Invalid phone number'
+                }
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  type='tel'
+                  label='Admin Phone'
+                  placeholder='Enter admin phone number'
+                  error={!!errors.adminPhone}
+                  helperText={errors.adminPhone?.message}
+                />
+              )}
+            />
+          </>
+
           {/* Action Buttons */}
-          <div className='flex items-center gap-4'>
-            <Button variant='contained' type='submit' disabled={schoolsLoading}>
-              {schoolsLoading
+          <div className='flex items-center gap-4 mt-4'>
+            <Button variant='contained' type='submit' disabled={isLoading || schoolsLoading}>
+              {isLoading
                 ? initialData
                   ? 'Updating...'
                   : 'Creating...'
@@ -204,7 +334,7 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
                   ? 'Update School'
                   : 'Create School'}
             </Button>
-            <Button variant='outlined' color='error' onClick={handleReset} disabled={schoolsLoading}>
+            <Button variant='outlined' color='error' onClick={handleReset} disabled={isLoading || schoolsLoading}>
               Cancel
             </Button>
           </div>

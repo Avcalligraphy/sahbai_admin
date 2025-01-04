@@ -80,7 +80,9 @@ type UserRoleType = {
 
 const userRoleObj: UserRoleType = {
   teacher: { icon: 'ri-team-line', color: 'success' },
-  user: { icon: 'ri-user-3-line', color: 'primary' }
+  user: { icon: 'ri-user-3-line', color: 'primary' },
+  school: { icon: 'ri-school-line', color: 'primary' },
+  admin: { icon: 'ri-school-line', color: 'primary' }
 }
 
 type UserStatusType = {

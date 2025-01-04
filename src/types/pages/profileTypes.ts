@@ -11,15 +11,16 @@ export type ProjectTableRowType = {
   status: number
   actions?: string
 }
-export type ProfileHeaderType = {
-  fullName: string
-  coverImg: string
-  location: string
-  profileImg: string
-  joiningDate: string
-  designation: string
-  designationIcon?: string
-}
+
+// export type ProfileHeaderType = {
+//   fullName: string
+//   coverImg: string
+//   location: string
+//   profileImg: string
+//   joiningDate: string
+//   designation: string
+//   designationIcon?: string
+// }
 export type ProfileAvatarGroupType = {
   name: string
   avatar: string
@@ -88,15 +89,16 @@ export type ConnectionsTabType = {
   isConnected: boolean
   chips: ProfileChipType[]
 }
-export type ProfileTabType = {
-  teams: ProfileTeamsType[]
-  about: ProfileCommonType[]
-  contacts: ProfileCommonType[]
-  overview: ProfileCommonType[]
-  teamsTech: ProfileTeamsTechType[]
-  connections: ProfileConnectionsType[]
-  projectTable: ProjectTableRowType[]
-}
+
+// export type ProfileTabType = {
+//   teams: ProfileTeamsType[]
+//   about: ProfileCommonType[]
+//   contacts: ProfileCommonType[]
+//   overview: ProfileCommonType[]
+//   teamsTech: ProfileTeamsTechType[]
+//   connections: ProfileConnectionsType[]
+//   projectTable: ProjectTableRowType[]
+// }
 export type UserProfileActiveTab = ProfileTabType | TeamsTabType[] | ProjectsTabType[] | ConnectionsTabType[]
 
 export type DataType = {
@@ -105,7 +107,60 @@ export type DataType = {
   projects: ProjectsTabType[]
   connections: ConnectionsTabType[]
 }
-export type Data = {
-  users: DataType
-  profileHeader: ProfileHeaderType
+
+// export type Data = {
+//   users: DataType
+//   profileHeader: ProfileHeaderType
+// }
+
+// export type Data = {
+//   id: number
+//   name: string
+//   email: string
+//   role: string
+//   image?: string | null
+// }
+
+export type DataStrapi = {
+  users: {
+    profile?: ProfileTabType
+  }
+}
+
+export type ProfileHeaderType = {
+  name?: string
+  email?: string
+  role?: string
+  phone?: string
+  designationIcon?: string
+  designation?: string
+  location?: string
+  joiningDate?: string
+}
+
+export type ProfileTabType = {
+  name?: string
+  email?: string
+  role?: string
+  phone?: string
+  about?: Array<{
+    title: string
+    value: string
+    icon?: string
+  }>
+  contacts?: Array<{
+    title: string
+    value: string
+    icon?: string
+  }>
+  teams?: Array<{
+    name: string
+    role: string
+    icon?: string
+  }>
+  overview?: Array<{
+    title: string
+    value: string
+    icon?: string
+  }>
 }
