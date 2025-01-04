@@ -1,7 +1,7 @@
 'use client'
 
 // MUI Imports
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -14,6 +14,9 @@ import type { Theme } from '@mui/material/styles'
 
 // Third-party Imports
 import classnames from 'classnames'
+
+// Type Imports
+import type { SessionsType, AspirationsType } from '@/types/apps/aspirationsTypes'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
@@ -44,13 +47,31 @@ import { useAppContext } from '@/contexts/AppContext'
 //   }
 // ]
 
-const AspirationsCard = () => {
+const AspirationsCard = ({ session }: { session: SessionsType }) => {
   const { aspirations, fetchAspirations } = useAppContext()
+
+  const [filteredData, setFilteredData] = useState<AspirationsType[]>([])
 
   // Fetch schools saat komponen dimount
   useEffect(() => {
     fetchAspirations()
   }, [])
+
+  // Filter data berdasarkan role dan kondisi lainnya
+  useEffect(() => {
+    // Pastikan orderData tersedia
+    if (!aspirations) return
+
+    // Filter berdasarkan role
+    let result = aspirations
+
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(aspiration => aspiration.school.data?.attributes?.title === session?.user?.name)
+    }
+
+    setFilteredData(result)
+  }, [aspirations, session])
 
   // Hooks
   const isBelowMdScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
@@ -72,7 +93,7 @@ const AspirationsCard = () => {
           >
             <div className='flex justify-between'>
               <div className='flex flex-col'>
-                <Typography variant='h4'>{aspirations.length}</Typography>
+                <Typography variant='h4'>{filteredData.length}</Typography>
                 <Typography>Total Aspirations</Typography>
               </div>
               <CustomAvatar variant='rounded' color='primary' size={42} skin='light'>

@@ -10,14 +10,17 @@ import type { ReadingType } from '@/types/apps/readingTypes'
 import ReadingCard from './ReadingCard'
 import ReadingListTable from './ReadingListTable'
 
-const ReadingList = ({ orderData }: { orderData?: ReadingType[] }) => {
+// Type Imports
+import type { SessionsType } from '@/types/apps/aspirationsTypes'
+
+const ReadingList = ({ orderData, session }: { orderData?: ReadingType[]; session: SessionsType }) => {
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
-        <ReadingCard />
+        <ReadingCard session={session} />
       </Grid>
       <Grid item xs={12}>
-        <ReadingListTable orderData={orderData} />
+        <ReadingListTable orderData={orderData} session={session} />
       </Grid>
     </Grid>
   )

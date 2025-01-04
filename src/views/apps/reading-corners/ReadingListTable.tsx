@@ -52,6 +52,7 @@ import { getInitials } from '@/utils/getInitials'
 import tableStyles from '@core/styles/table.module.css'
 
 import type { ReadingType } from '@/types/apps/readingTypes'
+import type { SessionsType } from '@/types/apps/aspirationsTypes'
 
 import { useAppContext } from '@/contexts/AppContext'
 
@@ -140,7 +141,7 @@ const DebouncedInput = ({
 // Column Definitions
 const columnHelper = createColumnHelper<ReadingTypeWithAction>()
 
-const ReadingListTable = ({ orderData }: { orderData?: ReadingType[] }) => {
+const ReadingListTable = ({ orderData, session }: { orderData?: ReadingType[]; session: SessionsType }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [filteredData, setFilteredData] = useState<ReadingType[]>([])
@@ -153,28 +154,40 @@ const ReadingListTable = ({ orderData }: { orderData?: ReadingType[] }) => {
     fetchReadings()
   }, [])
 
+  // Filter data berdasarkan role dan kondisi lainnya
   useEffect(() => {
-    const filtered = readings.filter(reading => {
-      // Filter berdasarkan sekolah
-      if (selectedWritter && reading.writter !== selectedWritter) return false
+    // Pastikan orderData tersedia
+    if (!readings) return
 
-      // Filter berdasarkan global search
-      if (globalFilter) {
-        const searchValue = globalFilter.toLowerCase()
+    // Filter berdasarkan role
+    let result = readings
 
-        return Object.values(readings).some(value => String(value).toLowerCase().includes(searchValue))
-      }
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(reading => reading.school.data?.attributes?.title === session?.user?.name)
+    }
 
-      return true
-    })
+    // Filter berdasarkan sekolah yang dipilih
+    if (selectedWritter) {
+      result = result.filter(reading => reading.writter === selectedWritter)
+    }
 
-    setFilteredData(filtered)
-  }, [readings, selectedWritter, globalFilter])
+    // Filter berdasarkan global search
+    if (globalFilter) {
+      const searchValue = globalFilter.toLowerCase()
+
+      result = result.filter(aspiration =>
+        Object.values(aspiration).some(value => String(value).toLowerCase().includes(searchValue))
+      )
+    }
+
+    setFilteredData(result)
+  }, [orderData, session, selectedWritter, globalFilter, readings])
 
   // Unique schools for filter
   const uniqueWritters = useMemo(() => {
-    return Array.from(new Set(readings.map(reading => reading.writter || 'Unknown')))
-  }, [readings])
+    return Array.from(new Set(filteredData.map(reading => reading.writter || 'Unknown')))
+  }, [filteredData])
 
   // Delete Aspiration
   const handleDelete = async (readingId: number) => {

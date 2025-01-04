@@ -38,8 +38,10 @@ import {
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
+// import { useSession } from 'next-auth/react'
+
 // Type Imports
-import type { AspirationsType } from '@/types/apps/aspirationsTypes'
+import type { AspirationsType, SessionsType } from '@/types/apps/aspirationsTypes'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -123,7 +125,7 @@ const DebouncedInput = ({
 // Column Definitions
 const columnHelper = createColumnHelper<AspirationsTypeWithAction>()
 
-const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) => {
+const AspirationsListTable = ({ orderData, session }: { orderData?: AspirationsType[]; session: SessionsType }) => {
   // States
   // const [status, setStatus] = useState<AspirationsType['aspirationsStatus']>('')
   const [rowSelection, setRowSelection] = useState({})
@@ -137,23 +139,36 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
   useEffect(() => {
     fetchAspirations()
   }, [])
+
+  // Filter data berdasarkan role dan kondisi lainnya
   useEffect(() => {
-    const filtered = aspirations.filter(aspiration => {
-      // Filter berdasarkan sekolah
-      if (selectedSchool && aspiration.school.data?.attributes?.title !== selectedSchool) return false
+    // Pastikan orderData tersedia
+    if (!aspirations) return
 
-      // Filter berdasarkan global search
-      if (globalFilter) {
-        const searchValue = globalFilter.toLowerCase()
+    // Filter berdasarkan role
+    let result = aspirations
 
-        return Object.values(aspiration).some(value => String(value).toLowerCase().includes(searchValue))
-      }
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(aspiration => aspiration.school.data?.attributes?.title === session?.user?.name)
+    }
 
-      return true
-    })
+    // Filter berdasarkan sekolah yang dipilih
+    if (selectedSchool) {
+      result = result.filter(aspiration => aspiration.school.data?.attributes?.title === selectedSchool)
+    }
 
-    setFilteredData(filtered)
-  }, [aspirations, selectedSchool, globalFilter])
+    // Filter berdasarkan global search
+    if (globalFilter) {
+      const searchValue = globalFilter.toLowerCase()
+
+      result = result.filter(aspiration =>
+        Object.values(aspiration).some(value => String(value).toLowerCase().includes(searchValue))
+      )
+    }
+
+    setFilteredData(result)
+  }, [orderData, session, selectedSchool, globalFilter, aspirations])
 
   // Unique schools for filter
   const uniqueSchools = useMemo(() => {
@@ -161,7 +176,7 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
   }, [aspirations])
 
   const handleExport = async () => {
-    await exportAspirationsToExcel(aspirations)
+    await exportAspirationsToExcel(filteredData)
   }
 
   // Delete Aspiration
@@ -318,7 +333,7 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
       })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orderData, filteredData]
+    [orderData, filteredData, session]
   )
 
   const table = useReactTable({
@@ -380,24 +395,26 @@ const AspirationsListTable = ({ orderData }: { orderData?: AspirationsType[] }) 
             placeholder='Search Aspirations'
             className='is-full sm:is-auto min-is-[250px]'
           />
-          <FormControl fullWidth size='small' className='min-is-[175px]'>
-            <InputLabel id='school-select'>School</InputLabel>
-            <Select
-              fullWidth
-              id='select-school'
-              value={selectedSchool}
-              onChange={e => setSelectedSchool(e.target.value)}
-              label='School'
-              labelId='school-select'
-            >
-              <MenuItem value=''>All Schools</MenuItem>
-              {uniqueSchools.map(school => (
-                <MenuItem key={school} value={school}>
-                  {school}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {session?.user?.role === 'school' ? null : (
+            <FormControl fullWidth size='small' className='min-is-[175px]'>
+              <InputLabel id='school-select'>School</InputLabel>
+              <Select
+                fullWidth
+                id='select-school'
+                value={selectedSchool}
+                onChange={e => setSelectedSchool(e.target.value)}
+                label='School'
+                labelId='school-select'
+              >
+                <MenuItem value=''>All Schools</MenuItem>
+                {uniqueSchools.map(school => (
+                  <MenuItem key={school} value={school}>
+                    {school}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </div>
       </CardContent>
       <div className='overflow-x-auto'>

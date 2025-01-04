@@ -1,7 +1,9 @@
 'use client'
 
 // React Imports
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+
+import axios from 'axios'
 
 // MUI Imports
 import Button from '@mui/material/Button'
@@ -16,6 +18,7 @@ import FormHelperText from '@mui/material/FormHelperText'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import Checkbox from '@mui/material/Checkbox'
+import { Box } from '@mui/material'
 
 import Swal from 'sweetalert2'
 
@@ -24,6 +27,7 @@ import { useForm, Controller } from 'react-hook-form'
 
 // Types Imports
 import type { UsersType } from '@/types/apps/userTypes'
+import type { SchoolsType } from '@/types/apps/schoolsTypes'
 
 import { useAppContext } from '@/contexts/AppContext'
 
@@ -31,6 +35,8 @@ type Props = {
   open: boolean
   handleClose: () => void
   initialData?: UsersType
+  role?: string
+  schoolName?: string
 }
 
 type FormValidateType = {
@@ -43,17 +49,54 @@ type FormValidateType = {
   blocked: boolean | '0' | '1'
   job: string
   reports: number[]
+  photo?: File | null
 }
 
-const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
+const AddUserDrawer = ({ open, handleClose, initialData, role, schoolName }: Props) => {
   const { createUser, updateUser, usersLoading, usersError, schools, fetchSchools, reports, fetchReports } =
     useAppContext()
+
+  // State for file upload
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [filePreview, setFilePreview] = useState<string | null>(null)
+  const [filteredData, setFilteredData] = useState<SchoolsType[]>([])
 
   // Fetch schools when component mounts
   useEffect(() => {
     fetchSchools()
     fetchReports()
   }, [])
+
+  useEffect(() => {
+    // Pastikan orderData tersedia
+    if (!schools) return
+
+    // Filter berdasarkan role
+    let result = schools
+
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (role === 'school') {
+      result = result.filter(school => school.title === schoolName)
+    }
+
+    setFilteredData(result)
+  }, [schools, role, schoolName])
+
+  // Effect untuk preview gambar
+  useEffect(() => {
+    if (selectedFile) {
+      // Buat URL preview
+      const reader = new FileReader()
+
+      reader.onloadend = () => {
+        setFilePreview(reader.result as string)
+      }
+
+      reader.readAsDataURL(selectedFile)
+    } else {
+      setFilePreview(null)
+    }
+  }, [selectedFile])
 
   // Hooks
   const {
@@ -90,6 +133,10 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
         job: initialData.job,
         reports: initialData?.reports ? initialData.reports.map(report => report.id) : []
       })
+
+      if (initialData.photo?.url) {
+        setFilePreview(`${process.env.NEXT_PUBLIC_STRAPI_URL}${initialData.photo.url}`)
+      }
     } else if (!initialData && open) {
       // Reset form jika tidak ada initial data
       reset({
@@ -102,12 +149,56 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
         job: '',
         reports: []
       })
+      setFilePreview(null)
+      setSelectedFile(null)
     }
   }, [initialData, open, reset])
 
+  const handleFileUpload = async (file: File) => {
+    const formData = new FormData()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+
+    formData.append('files', file)
+
+    try {
+      const uploadResponse = await axios.post(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      // Log full response untuk debugging
+      console.log('Upload Response:', uploadResponse.data)
+
+      // Strapi biasanya mengembalikan array of uploaded files
+      const uploadedFiles = uploadResponse.data
+
+      // Kembalikan ID file pertama
+      return uploadedFiles.length > 0 ? uploadedFiles[0].id : null
+    } catch (error) {
+      console.error('File upload failed', error)
+
+      // Logging error detail
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error:', error.response?.data)
+      }
+
+      return null
+    }
+  }
+
   const onSubmit = async (data: FormValidateType) => {
     try {
-      // Cek apakah ini update atau create
+      let photoId = null
+
+      if (selectedFile) {
+        // Jika ada file baru yang dipilih, upload
+        photoId = await handleFileUpload(selectedFile)
+      } else if (initialData && initialData.photo?.id) {
+        // Jika tidak ada file baru, gunakan ID foto dari data awal
+        photoId = initialData.photo.id
+      }
 
       const submitData = {
         ...data,
@@ -119,6 +210,7 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
         // Update
         await updateUser({
           id: initialData.id,
+          photo: photoId,
           ...submitData
         })
 
@@ -132,6 +224,7 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
         // Create
         await createUser({
           ...submitData,
+          photo: photoId,
           password: data.password || ''
         })
 
@@ -144,6 +237,7 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
       }
 
       // Reset form dan tutup drawer
+      setSelectedFile(null)
       reset()
       handleClose()
     } catch (error) {
@@ -339,7 +433,7 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
               }}
               render={({ field }) => (
                 <Select {...field} label='Select School' labelId='school-select'>
-                  {schools.map(school => (
+                  {filteredData.map(school => (
                     <MenuItem key={school.id} value={school.id}>
                       {school.title}
                     </MenuItem>
@@ -403,6 +497,71 @@ const AddUserDrawer = ({ open, handleClose, initialData }: Props) => {
                   )}
                 />
               </FormControl>
+
+              {/* Photo Incident Field */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 2 }}>
+                <input
+                  type='file'
+                  accept='image/*'
+                  style={{ display: 'none' }}
+                  id='photo-upload'
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+
+                    if (file) {
+                      setSelectedFile(file)
+                    }
+                  }}
+                />
+                <label htmlFor='photo-upload'>
+                  <Button variant='contained' component='span' startIcon={<i className='ri-upload-2-line' />}>
+                    Upload Incident Photo
+                  </Button>
+                </label>
+
+                {/* Image Preview */}
+                {(filePreview || initialData?.photo?.url) && (
+                  <Box
+                    sx={{
+                      width: '100%',
+                      maxHeight: 200,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      border: '1px dashed grey',
+                      borderRadius: 2,
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <img
+                      src={filePreview || `${process.env.NEXT_PUBLIC_STRAPI_URL}${initialData?.photo?.url}`}
+                      alt='Incident Preview'
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '200px',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </Box>
+                )}
+
+                {/* File Name Display */}
+                {selectedFile && (
+                  <Typography variant='body2' color='text.secondary'>
+                    Selected File: {selectedFile.name}
+                    <IconButton
+                      size='small'
+                      color='error'
+                      onClick={() => {
+                        setSelectedFile(null)
+                        setFilePreview(null)
+                      }}
+                    >
+                      <i className='ri-close-line' />
+                    </IconButton>
+                  </Typography>
+                )}
+              </Box>
             </>
           )}
 

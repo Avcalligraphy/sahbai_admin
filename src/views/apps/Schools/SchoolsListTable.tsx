@@ -3,9 +3,6 @@
 // React Imports
 import { useState, useEffect, useMemo } from 'react'
 
-// Next Imports
-import { useParams } from 'next/navigation'
-
 import Swal from 'sweetalert2'
 
 // MUI Imports
@@ -16,6 +13,7 @@ import Typography from '@mui/material/Typography'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
+import Chip from '@mui/material/Chip'
 import TablePagination from '@mui/material/TablePagination'
 import type { TextFieldProps } from '@mui/material/TextField'
 
@@ -38,14 +36,8 @@ import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
 // Type Imports
-import type { Locale } from '@configs/i18n'
+import type { ThemeColor } from '@core/types'
 import type { SchoolsType } from '@/types/apps/schoolsTypes'
-
-// Component Imports
-import OptionMenu from '@core/components/option-menu'
-
-// Util Imports
-import { getLocalizedUrl } from '@/utils/i18n'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -67,12 +59,14 @@ type SchoolsTypeWithAction = SchoolsType & {
   action?: string
 }
 
-// type InvoiceStatusObj = {
-//   [key: string]: {
-//     icon: string
-//     color: ThemeColor
-//   }
-// }
+type UserStatusType = {
+  [key: string]: ThemeColor
+}
+
+const userStatusObj: UserStatusType = {
+  true: 'error',
+  false: 'success'
+}
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   // Rank the item
@@ -245,9 +239,6 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
     }
   }
 
-  // Hooks
-  const { lang: locale } = useParams()
-
   const columns = useMemo<ColumnDef<SchoolsTypeWithAction, any>[]>(
     () => [
       {
@@ -304,6 +295,20 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
         header: 'Teachers',
         cell: ({ row }) => <Typography color='text.primary'>{row.original.teachers?.data?.length || '0'}</Typography>
       }),
+      columnHelper.accessor('user_school', {
+        header: 'Status',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-3'>
+            <Chip
+              variant='tonal'
+              label={row.original.user_school?.data?.attributes?.blocked ? 'Blocked' : 'Active'}
+              size='small'
+              color={userStatusObj[row.original.user_school?.data?.attributes?.blocked === true ? 'true' : 'false']}
+              className='capitalize'
+            />
+          </div>
+        )
+      }),
       columnHelper.accessor('action', {
         header: 'Action',
         cell: ({ row }) => (
@@ -317,29 +322,6 @@ const SchoolsListTable = ({ invoiceData }: { invoiceData?: SchoolsType[] }) => {
             <IconButton size='small' onClick={() => handleOpenUpdateDrawer(row.original)}>
               <i className='ri-pencil-line text-textSecondary' />
             </IconButton>
-            <OptionMenu
-              iconClassName='text-textSecondary'
-              options={[
-                {
-                  text: 'Download',
-                  icon: 'ri-download-line',
-                  menuItemProps: { className: 'flex items-center gap-2' }
-                },
-                {
-                  text: 'Edit',
-                  icon: 'ri-pencil-line',
-                  href: getLocalizedUrl(`/apps/invoice/edit/${row.original.id}`, locale as Locale),
-                  linkProps: {
-                    className: 'flex items-center is-full plb-2 pli-5 gap-2'
-                  }
-                },
-                {
-                  text: 'Duplicate',
-                  icon: 'ri-file-copy-line',
-                  menuItemProps: { className: 'flex items-center gap-2' }
-                }
-              ]}
-            />
           </div>
         ),
         enableSorting: false

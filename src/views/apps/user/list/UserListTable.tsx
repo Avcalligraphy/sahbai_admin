@@ -199,8 +199,8 @@ const UserListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <Icon
-              className={classnames('text-[22px]', userRoleObj[row.original.roleUser].icon)}
-              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.roleUser].color}-main)` }}
+              className={classnames('text-[22px]', userRoleObj[row.original.roleUser || 'default'].icon)}
+              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.roleUser || 'default'].color}-main)` }}
             />
             <Typography className='capitalize' color='text.primary'>
               {row.original.roleUser}

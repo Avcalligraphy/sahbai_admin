@@ -1,7 +1,7 @@
 'use client'
 
 // MUI Imports
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -11,25 +11,48 @@ import Typography from '@mui/material/Typography'
 // Third-party Imports
 import classnames from 'classnames'
 
+import type { SessionsType } from '@/types/apps/aspirationsTypes'
+import type { ReportsType } from '@/types/apps/reportsTypes'
+
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
 import { useAppContext } from '@/contexts/AppContext'
 
-const ReportsCard = () => {
+const ReportsCard = ({ session }: { session: SessionsType }) => {
   const { reports, fetchReports } = useAppContext()
+  const [filteredData, setFilteredData] = useState<ReportsType[]>([])
 
   // Fetch users saat komponen dimount
   useEffect(() => {
     fetchReports()
   }, [])
 
+  useEffect(() => {
+    // Pastikan orderData tersedia
+    if (!reports) return
+
+    // Filter berdasarkan role
+    let result = reports
+
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(report => report.school.data?.attributes?.title === session?.user?.name)
+    }
+
+    if (session?.user?.role === 'teacher') {
+      result = result.filter(report => report.user?.data?.attributes?.username === session?.user?.name)
+    }
+
+    setFilteredData(result)
+  }, [reports, session])
+
   const reportStats = useMemo(() => {
     return {
-      totalReports: reports.length,
-      victimReports: reports.filter(report => report.victimName).length,
-      perpetratorReports: reports.filter(report => report.perpetratorName).length
+      totalReports: filteredData.length,
+      victimReports: filteredData.filter(report => report.victimName).length,
+      perpetratorReports: filteredData.filter(report => report.perpetratorName).length
     }
-  }, [reports])
+  }, [filteredData])
 
   const cardData = [
     {

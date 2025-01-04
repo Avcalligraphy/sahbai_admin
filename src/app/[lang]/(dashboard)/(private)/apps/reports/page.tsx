@@ -1,6 +1,12 @@
+import { getServerSession } from 'next-auth/next'
+
+import { authOptions } from '@/libs/auth'
+
 // Data Imports
 import { getReports } from '@/app/api/apps/reports/reports'
 import ReportsList from '@/views/apps/reports'
+
+import type { User } from '@/types/apps/aspirationsTypes'
 
 /**
  * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
@@ -22,11 +28,23 @@ import ReportsList from '@/views/apps/reports'
 
 const ReportsApp = async () => {
   // Vars
-  const { data, error } = await getReports()
+  const { data } = await getReports()
 
-  console.log(error)
+  const session = await getServerSession(authOptions)
 
-  return <ReportsList invoiceData={data} />
+  return (
+    <ReportsList
+      invoiceData={data}
+      session={
+        session
+          ? {
+              user: session.user as User,
+              jwt: session.jwt
+            }
+          : { user: undefined, jwt: undefined }
+      }
+    />
+  )
 }
 
 export default ReportsApp

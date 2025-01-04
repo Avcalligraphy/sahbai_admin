@@ -1,8 +1,12 @@
+import { getServerSession } from 'next-auth/next'
+
 // MUI Imports
 import Grid from '@mui/material/Grid'
 import { Tooltip } from '@mui/material'
 
 import { formatDistance } from 'date-fns'
+
+import { authOptions } from '@/libs/auth'
 
 // Components Imports
 import Sales from '@views/dashboards/ecommerce/Sales'
@@ -113,6 +117,28 @@ const calculateWriterStats = (data: ReadingType[]) => {
 }
 
 const DashboardCRM = async () => {
+  const session = await getServerSession(authOptions)
+
+  const filterDataByRole = (data: any[]) => {
+    // Jika admin, kembalikan semua data
+    if (session?.user?.role !== 'school') {
+      return data
+    }
+
+    // Jika school, filter berdasarkan title sekolah
+    if (session?.user?.role === 'school') {
+      return data.filter(item => {
+        // Sesuaikan dengan struktur data
+        const schoolTitle = item.school?.data?.attributes?.title || item.school?.title || item.school
+
+        return schoolTitle === session.user.name
+      })
+    }
+
+    // Untuk role lain, kembalikan array kosong atau data terbatas
+    return []
+  }
+
   // Vars
   const { data: aspirations } = await getAspirations()
   const { data: readingCorners } = await getReadingCorners()
@@ -120,10 +146,17 @@ const DashboardCRM = async () => {
   const { data: schools } = await getSchools()
   const { data: students } = await getStudents()
 
+  const filteredAspirations = filterDataByRole(aspirations)
+  const filteredReadingCorners = filterDataByRole(readingCorners)
+  const filteredReports = filterDataByRole(reports)
+  const filteredStudents = filterDataByRole(students)
+
+  console.log(filteredAspirations)
+
   // const serverMode = getServerMode()
   // const data = await getUserData()
 
-  const writerStats = calculateWriterStats(readingCorners)
+  const writerStats = calculateWriterStats(filteredReadingCorners)
 
   const colorMapping: Record<string, ThemeColor> = {
     primary: 'primary',
@@ -136,35 +169,41 @@ const DashboardCRM = async () => {
   const dataStaticCard = [
     {
       title: 'Aspirations',
-      stats: aspirations.length,
+      stats: filteredAspirations.length,
       trendNumber: 0,
       avatarIcon: 'ri-lightbulb-line', // Ikon ide/aspirasi
       color: colorMapping['primary']
     },
     {
       title: 'Reading Corners',
-      stats: readingCorners.length,
+      stats: filteredReadingCorners.length,
       trendNumber: 0,
       avatarIcon: 'ri-book-open-line', // Ikon buku
       color: colorMapping['success']
     },
     {
       title: 'Reports',
-      stats: reports.length,
+      stats: filteredReports.length,
       trendNumber: 0,
       avatarIcon: 'ri-file-list-3-line', // Ikon daftar laporan
       color: colorMapping['warning']
     },
-    {
-      title: 'Schools',
-      stats: schools.length,
-      trendNumber: 0,
-      avatarIcon: 'ri-building-line', // Ikon gedung sekolah
-      color: colorMapping['info']
-    },
+
+    // Hanya tampilkan Schools untuk admin
+    ...(session?.user?.role === 'admin'
+      ? [
+          {
+            title: 'Schools',
+            stats: schools.length,
+            trendNumber: 0,
+            avatarIcon: 'ri-building-line',
+            color: colorMapping['info']
+          }
+        ]
+      : []),
     {
       title: 'Users',
-      stats: students.length,
+      stats: filteredStudents.length,
       trendNumber: 0,
       avatarIcon: 'ri-group-line', // Ikon kelompok
       color: colorMapping['error']
@@ -177,7 +216,7 @@ const DashboardCRM = async () => {
         <LogisticsStatisticsCard data={dataStaticCard} />
       </Grid>
       <Grid item xs={12} md={6}>
-        <Sales data={reports} />
+        <Sales data={filteredReports} />
       </Grid>
       <Grid item xs={12} sm={3} md={2}>
         <CardStatVertical

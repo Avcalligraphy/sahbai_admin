@@ -2,6 +2,7 @@
 
 export async function getReadingCorners() {
   const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+  const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
   //   const queryString = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])).toString()
 
@@ -10,7 +11,7 @@ export async function getReadingCorners() {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`
+        Authorization: `Bearer ${token}`
       },
       cache: 'no-store' // atau 'force-cache' untuk caching
     })

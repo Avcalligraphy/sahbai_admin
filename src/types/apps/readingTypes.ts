@@ -5,6 +5,13 @@ export type ReadingType = {
   writter: string
   updatedAt: string
   createdAt: string
+  school: {
+    data?: {
+      attributes?: {
+        title?: string
+      }
+    }
+  }
   image?: {
     data?: {
       attributes?: {

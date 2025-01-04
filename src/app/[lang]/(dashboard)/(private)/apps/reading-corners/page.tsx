@@ -1,35 +1,53 @@
+// Data Imports
+import { redirect } from 'next/navigation'
+
+import { getServerSession } from 'next-auth/next'
+
+import { authOptions } from '@/libs/auth'
+
 // Component Imports
 import ReadingList from '@/views/apps/reading-corners'
 
 // Data Imports
 
 import { getReadingCorners } from '@/app/api/apps/reading-corners/readingCorners'
-
-/**
- * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
- * ! `.env` file found at root of your project and also update the API endpoints like `/apps/ecommerce` in below example.
- * ! Also, remove the above server action import and the action itself from the `src/app/server/actions.ts` file to clean up unused code
- * ! because we've used the server action for getting our static data.
- */
-
-/* const getEcommerceData = async () => {
-  // Vars
-  const res = await fetch(`${process.env.API_URL}/apps/ecommerce`)
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch ecommerce data')
-  }
-
-  return res.json()
-} */
+import type { User } from '@/types/apps/aspirationsTypes'
+import { getLocalizedUrl } from '@/utils/i18n'
+import themeConfig from '@/configs/themeConfig'
 
 const ReadingListPage = async () => {
+  const session = await getServerSession(authOptions)
+
+  // Cek jika tidak ada session
+
+  if (!session) {
+    redirect('/login')
+  }
+
+  // Cek role user
+  if (session.user.role === 'teacher') {
+    // Redirect ke homepage jika user adalah school
+    const homePage = getLocalizedUrl(themeConfig.homePageUrl, 'en')
+
+    redirect(homePage)
+  }
+
   // Vars
-  const { data, error } = await getReadingCorners()
+  const { data } = await getReadingCorners()
 
-  console.log(error)
-
-  return <ReadingList orderData={data} />
+  return (
+    <ReadingList
+      orderData={data}
+      session={
+        session
+          ? {
+              user: session.user as User,
+              jwt: session.jwt
+            }
+          : { user: undefined, jwt: undefined }
+      }
+    />
+  )
 }
 
 export default ReadingListPage

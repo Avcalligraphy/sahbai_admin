@@ -22,3 +22,17 @@ export type AspirationsType = {
     }
   }
 }
+
+export type User = {
+  id: number
+  name?: string | null
+  email?: string | null
+  jwt?: string
+  role?: 'admin' | 'school' | 'user' | 'teacher'
+  phone?: string
+}
+
+export type SessionsType = {
+  user?: User
+  jwt?: string
+}

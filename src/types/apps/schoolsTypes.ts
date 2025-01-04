@@ -51,6 +51,7 @@ export type SchoolsType = {
         email: string
         phone?: string
         roleUser: string
+        blocked: boolean
       }
     }
   }

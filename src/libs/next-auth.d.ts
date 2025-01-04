@@ -6,11 +6,11 @@ declare module 'next-auth' {
     name?: string | null
     email?: string | null
     jwt?: string
-    role?: 'admin' | 'school' | 'user'
+    role?: 'admin' | 'school' | 'user' | 'teacher'
     phone?: string
   }
 
-  interface Session {
+  export interface Session {
     user: User
     jwt?: string
   }

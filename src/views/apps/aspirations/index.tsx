@@ -4,20 +4,20 @@
 import Grid from '@mui/material/Grid'
 
 // Type Imports
-import type { AspirationsType } from '@/types/apps/aspirationsTypes'
+import type { AspirationsType, SessionsType } from '@/types/apps/aspirationsTypes'
 
 // Component Imports
 import AspirationsCard from './AspirationsCard'
 import AspirationsListTable from './AspirationsListTable'
 
-const AspirationsList = ({ orderData }: { orderData?: AspirationsType[] }) => {
+const AspirationsList = ({ orderData, session }: { orderData?: AspirationsType[]; session: SessionsType }) => {
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
-        <AspirationsCard />
+        <AspirationsCard session={session} />
       </Grid>
       <Grid item xs={12}>
-        <AspirationsListTable orderData={orderData} />
+        <AspirationsListTable orderData={orderData} session={session} />
       </Grid>
     </Grid>
   )

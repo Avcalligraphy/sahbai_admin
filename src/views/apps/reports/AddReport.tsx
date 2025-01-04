@@ -156,13 +156,14 @@ const AddReport = ({ open, handleClose, initialData }: Props) => {
 
   const handleFileUpload = async (file: File) => {
     const formData = new FormData()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     formData.append('files', file)
 
     try {
       const uploadResponse = await axios.post(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/upload`, formData, {
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiaWF0IjoxNzM0Njc5NTQ1LCJleHAiOjE3MzcyNzE1NDV9.A9u9t-vVObT4TJJwaMTOqU7mfJe0d0r-SS7L2JPJ2OQ`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       })

@@ -21,7 +21,11 @@ const TableFilters = ({ onFilterChange, tableData }: TableFiltersProps) => {
   const [status, setStatus] = useState('')
 
   // Unique values
-  const uniqueroleUsers = tableData ? Array.from(new Set(tableData.map(user => user.roleUser).filter(Boolean))) : []
+  const uniqueroleUsers = tableData
+    ? Array.from(
+        new Set(tableData.map(user => user.roleUser).filter(role => role && !['admin', 'school'].includes(role)))
+      )
+    : []
 
   const uniqueSchools = tableData ? Array.from(new Set(tableData.map(user => user.school?.title).filter(Boolean))) : []
 

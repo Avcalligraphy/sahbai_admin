@@ -1,23 +1,23 @@
-import { getServerSession } from 'next-auth/next'
+// import { getServerSession } from 'next-auth/next'
 
-import { authOptions } from '@/libs/auth'
+// import { authOptions } from '@/libs/auth'
 
-export async function getAuthToken() {
-  try {
-    const session = await getServerSession(authOptions)
+// export async function getAuthToken() {
+//   try {
+//     const session = await getServerSession(authOptions)
 
-    if (!session) {
-      // Fallback atau throw error
-      return process.env.NEXT_PUBLIC_DEFAULT_TOKEN
-    }
+//     if (!session) {
+//       // Fallback atau throw error
+//       return process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+//     }
 
-    return session.jwt
-  } catch (error) {
-    console.error('Token retrieval error:', error)
+//     return session.jwt
+//   } catch (error) {
+//     console.error('Token retrieval error:', error)
 
-    return process.env.NEXT_PUBLIC_DEFAULT_TOKEN
-  }
-}
+//     return process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+//   }
+// }
 
 export interface AspirationPayload {
   title: string
@@ -28,7 +28,7 @@ export interface AspirationPayload {
 export const aspirationActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/aspirations?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
@@ -56,7 +56,7 @@ export const aspirationActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-      const token = await getAuthToken()
+      const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
       const response = await fetch(`${apiURL}/api/aspirations/${id}`, {
         method: 'DELETE',
@@ -86,7 +86,7 @@ export const aspirationActions = {
 export const readingActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/blogs?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
@@ -114,7 +114,7 @@ export const readingActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-      const token = await getAuthToken()
+      const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
       const response = await fetch(`${apiURL}/api/blogs/${id}`, {
         method: 'DELETE',
@@ -149,7 +149,7 @@ export interface SchoolPayload {
 export const schoolActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/schools?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
@@ -176,7 +176,7 @@ export const schoolActions = {
   // Tambahkan method create baru
   create: async (schoolData: { title: string; address: string; user_school: number }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/schools?populate=*`, {
       method: 'POST',
@@ -212,7 +212,7 @@ export const schoolActions = {
 
   update: async (id: number, data: { title: string; address: string }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/schools/${id}?populate=*`, {
       method: 'PUT',
@@ -246,7 +246,7 @@ export const schoolActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-      const token = await getAuthToken()
+      const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
       const response = await fetch(`${apiURL}/api/schools/${id}`, {
         method: 'DELETE',
@@ -283,6 +283,7 @@ export interface UserPayload {
   roleUser: string
   job: string
   reports: any
+  photo?: number | null
   school: {
     title: string
   }
@@ -291,7 +292,7 @@ export interface UserPayload {
 export const userActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/users?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
@@ -321,6 +322,7 @@ export const userActions = {
     school: number
     roleUser: string
     job?: string
+    photo?: number | null
     reports?: number[]
   }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
@@ -337,6 +339,7 @@ export const userActions = {
         phone: userData.phone,
         roleUser: userData.roleUser,
         job: userData.roleUser === 'teacher' ? userData.job : null,
+        photo: userData.photo ? userData.photo : null,
         reports: {
           connect: userData.reports?.map(id => ({ id })) || []
         },
@@ -359,6 +362,7 @@ export const userActions = {
     return {
       ...result.user,
       reports: result.reports || [],
+      photo: result.photo,
       school: {
         id: userData.school,
         title: result.user.school?.title || ''
@@ -405,10 +409,11 @@ export const userActions = {
       email?: string
       phone?: string
       password?: string
+      blocked?: boolean
     }
   ) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/users/${id}?populate=*`, {
       method: 'PUT',
@@ -420,7 +425,8 @@ export const userActions = {
         username: userData.username,
         email: userData.email,
         phone: userData.phone,
-        password: userData.password
+        password: userData.password,
+        blocked: userData.blocked ? 1 : 0
       })
     })
 
@@ -448,11 +454,12 @@ export const userActions = {
       roleUser: string
       blocked: boolean
       job?: string
+      photo?: number | null
       reports?: number[]
     }
   ) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/users/${id}`, {
       method: 'PUT',
@@ -467,6 +474,7 @@ export const userActions = {
         roleUser: userData.roleUser,
         school: userData.school,
         blocked: userData.blocked ? 1 : 0,
+        photo: userData.photo ? userData.photo : null,
         job: userData.roleUser === 'teacher' ? userData.job : null,
         reports: {
           connect: userData.reports?.map(id => ({ id })) || []
@@ -521,7 +529,7 @@ export const userActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-      const token = await getAuthToken()
+      const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
       const response = await fetch(`${apiURL}/api/users/${id}`, {
         method: 'DELETE',
@@ -551,7 +559,7 @@ export const userActions = {
 export const reportActions = {
   getAll: async () => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/reports?populate=*&pagination[pageSize]=100`, {
       method: 'GET',
@@ -594,7 +602,7 @@ export const reportActions = {
     user: number
   }) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const response = await fetch(`${apiURL}/api/reports?populate=*&pagination[pageSize]=100`, {
       method: 'POST',
@@ -660,7 +668,7 @@ export const reportActions = {
     }
   ) => {
     const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-    const token = await getAuthToken()
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
     const updatePayload: any = {}
 
@@ -721,7 +729,7 @@ export const reportActions = {
   delete: async (id: number) => {
     try {
       const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
-      const token = await getAuthToken()
+      const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
 
       const response = await fetch(`${apiURL}/api/reports/${id}`, {
         method: 'DELETE',

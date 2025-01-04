@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
 
           if (response.ok && data.jwt) {
             // Tambahkan pengecekan role
-            if (data.user.roleUser !== 'admin' && data.user.roleUser !== 'school') {
+            if (data.user.roleUser !== 'admin' && data.user.roleUser !== 'school' && data.user.roleUser !== 'teacher') {
               throw new Error('Access Denied: Admin access required')
             }
 
@@ -60,12 +60,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
+        token.id = user.id as number
         token.name = user.name ?? undefined
         token.email = user.email ?? undefined
         token.phone = user.phone ?? undefined
         token.jwt = user.jwt
-        token.role = user.role === 'admin' || user.role === 'school' ? user.role : 'user'
+        token.role = user.role === 'admin' || user.role === 'school' || user.role === 'teacher' ? user.role : 'user'
 
         console.log('JWT Callback - User Role:', token.role)
       }
@@ -77,12 +77,13 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id
         session.user.name = token.name
         session.user.email = token.email
-        session.user.role = token.role === 'admin' || token.role === 'school' ? token.role : 'user'
+        session.user.role =
+          token.role === 'admin' || token.role === 'school' || token.role === 'teacher' ? token.role : 'user'
         session.user.phone = token.phone
 
         // Optionally add JWT to session if needed
         // @ts-ignore
-        if (token.role !== 'admin' && token.role !== 'school') {
+        if (token.role !== 'admin' && token.role !== 'school' && token.role !== 'teacher') {
           throw new Error('Access Denied: Admin access required')
         }
 

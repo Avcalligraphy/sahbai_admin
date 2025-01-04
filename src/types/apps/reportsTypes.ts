@@ -14,6 +14,13 @@ export type ReportsType = {
   createdAt: string
   updatedAt: string
   publishedAt: string
+  school: {
+    data?: {
+      attributes?: {
+        title?: string
+      }
+    }
+  }
   photoIncident?: {
     data?: {
       id: number

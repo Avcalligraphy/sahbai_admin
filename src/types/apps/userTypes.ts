@@ -3,7 +3,8 @@ import type { ThemeColor } from '@core/types'
 
 export type UsersType = {
   id: number
-  roleUser: string
+  roleUser?: string
+  role: string
   email: string
   status: string
   avatar: string
@@ -12,17 +13,21 @@ export type UsersType = {
   contact: string
   fullName: string
   username: string
-  blocked: boolean
-  updatedAt: string
-  phone: string
-  job: string
+  blocked?: boolean
+  updatedAt?: string
+  phone?: string
+  job?: string
   reports?: {
     id: number
     victimName?: string
   }[]
-  school: {
-    id: number
-    title: string
+  school?: {
+    id?: number
+    title?: string
+  }
+  photo?: {
+    id?: number
+    url?: string
   }
   currentPlan: string
   avatarColor?: ThemeColor

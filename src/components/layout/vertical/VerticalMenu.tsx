@@ -112,22 +112,26 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         >
           {dictionary['navigation'].crm}
         </MenuItem>
-        <MenuItem
-          href={`/${locale}/apps/aspirations`}
-          icon={<i className='ri-apps-line' />}
-          exactMatch={false}
-          activeUrl='/apps/aspirations'
-        >
-          Aspirations
-        </MenuItem>
-        <MenuItem
-          href={`/${locale}/apps/reading-corners`}
-          icon={<i className='ri-book-2-line' />}
-          exactMatch={false}
-          activeUrl='/apps/reading-corners'
-        >
-          Reading Corners
-        </MenuItem>
+        {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+          <MenuItem
+            href={`/${locale}/apps/aspirations`}
+            icon={<i className='ri-apps-line' />}
+            exactMatch={false}
+            activeUrl='/apps/aspirations'
+          >
+            Aspirations
+          </MenuItem>
+        )}
+        {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+          <MenuItem
+            href={`/${locale}/apps/reading-corners`}
+            icon={<i className='ri-book-2-line' />}
+            exactMatch={false}
+            activeUrl='/apps/reading-corners'
+          >
+            Reading Corners
+          </MenuItem>
+        )}
         <MenuItem
           href={`/${locale}/apps/reports`}
           icon={<i className='ri-folder-chart-line' />}
@@ -146,14 +150,16 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
             Schools
           </MenuItem>
         )}
-        <MenuItem
-          href={`/${locale}/apps/students`}
-          icon={<i className='ri-team-line' />}
-          exactMatch={false}
-          activeUrl='/apps/students'
-        >
-          Users
-        </MenuItem>
+        {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+          <MenuItem
+            href={`/${locale}/apps/students`}
+            icon={<i className='ri-team-line' />}
+            exactMatch={false}
+            activeUrl='/apps/students'
+          >
+            Users
+          </MenuItem>
+        )}
 
         <MenuItem
           href={`/${locale}/pages/user-profile`}

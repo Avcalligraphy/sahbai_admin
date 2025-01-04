@@ -93,6 +93,7 @@ type AppContextType = {
     adminName?: string
     adminEmail?: string
     adminPassword?: string
+    blocked: boolean
     adminPhone?: string
     user_school: number
   }) => Promise<void>
@@ -110,6 +111,7 @@ type AppContextType = {
     phone: string
     school: number
     roleUser: string
+    photo?: number | null
     job: string
     reports?: number[]
   }) => Promise<void>
@@ -122,6 +124,7 @@ type AppContextType = {
     roleUser: string
     school: number
     blocked: boolean
+    photo?: number | null
     job: string
     reports?: number[]
   }) => Promise<void>
@@ -361,6 +364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     adminEmail?: string
     adminPhone?: string
     user_school: number
+    blocked: boolean
   }) => {
     try {
       if (!data.id) {
@@ -377,7 +381,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updateAdminSchool = await userActions.updateSchoolAdmin(data.user_school, {
         username: data.adminName,
         email: data.adminEmail,
-        phone: data.adminPhone
+        phone: data.adminPhone,
+        blocked: data.blocked
       })
 
       console.log('Updated Admin Result:', updateAdminSchool)
@@ -457,6 +462,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     phone: string
     school: number
     roleUser: string
+    photo?: number | null
     job?: string
     reports?: number[]
   }) => {
@@ -467,6 +473,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const newUser = await userActions.create({
         ...data,
         job: data.roleUser === 'teacher' ? data.job : undefined,
+        photo: data.photo,
         reports: data.reports || []
       })
 
@@ -477,6 +484,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...newUser,
           job: data.roleUser === 'teacher' ? data.job : undefined,
           reports: newUser.reports || [],
+          photo: newUser.photo,
           school: {
             id: data.school,
             title: selectedSchool?.title || ''
@@ -502,6 +510,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     roleUser: string
     blocked: boolean
     job?: string
+    photo?: number | null
     reports?: number[]
   }) => {
     try {
@@ -516,6 +525,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         roleUser: data.roleUser,
         school: data.school,
         blocked: data.blocked,
+        photo: data.photo,
         job: data.roleUser === 'teacher' ? data.job : undefined,
         reports: data.reports || []
       })
@@ -527,6 +537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ? {
                 ...user,
                 ...updatedUser,
+                photo: updatedUser.photo,
                 school: {
                   id: data.school,
                   title: updatedUser.school?.title || ''

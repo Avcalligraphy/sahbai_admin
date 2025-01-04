@@ -58,6 +58,7 @@ import tableStyles from '@core/styles/table.module.css'
 
 import type { ThemeColor } from '@core/types'
 import type { ReportsType } from '@/types/apps/reportsTypes'
+import type { SessionsType } from '@/types/apps/aspirationsTypes'
 
 import { useAppContext } from '@/contexts/AppContext'
 import AddReport from './AddReport'
@@ -137,7 +138,7 @@ const Icon = styled('i')({})
 // Column Definitions
 const columnHelper = createColumnHelper<ReportsTypeWithAction>()
 
-const ReportsListTable = ({ invoiceData }: { invoiceData?: ReportsType[] }) => {
+const ReportsListTable = ({ invoiceData, session }: { invoiceData?: ReportsType[]; session: SessionsType }) => {
   const { reports, deleteReport, deleteMultipleReports, fetchReports } = useAppContext()
 
   // States
@@ -155,31 +156,49 @@ const ReportsListTable = ({ invoiceData }: { invoiceData?: ReportsType[] }) => {
     fetchReports()
   }, [])
 
+  // Filter data berdasarkan role dan kondisi lainnya
   useEffect(() => {
-    const filtered = reports.filter(report => {
-      // Filter berdasarkan sekolah
-      if (selectedTeacher && report.user?.data?.attributes?.username !== selectedTeacher) return false
+    // Pastikan orderData tersedia
+    if (!reports) return
 
-      // Filter berdasarkan status
-      if (selectedStatus && report.status !== selectedStatus) return false
+    // Filter berdasarkan role
+    let result = reports
 
-      // Filter berdasarkan global search
-      if (globalFilter) {
-        const searchValue = globalFilter.toLowerCase()
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(report => report.school.data?.attributes?.title === session?.user?.name)
+    }
 
-        return Object.values(report).some(value => String(value).toLowerCase().includes(searchValue))
-      }
+    if (session?.user?.role === 'teacher') {
+      result = result.filter(report => report.user?.data?.attributes?.username === session?.user?.name)
+    }
 
-      return true
-    })
+    // Filter berdasarkan sekolah yang dipilih
+    if (selectedTeacher) {
+      result = result.filter(report => report.user?.data?.attributes?.username === selectedTeacher)
+    }
 
-    setFilteredData(filtered)
-  }, [reports, selectedTeacher, globalFilter, selectedStatus])
+    // Filter berdasarkan sekolah yang dipilih
+    if (selectedStatus) {
+      result = result.filter(report => report.status === selectedStatus)
+    }
+
+    // Filter berdasarkan global search
+    if (globalFilter) {
+      const searchValue = globalFilter.toLowerCase()
+
+      result = result.filter(reading =>
+        Object.values(reading).some(value => String(value).toLowerCase().includes(searchValue))
+      )
+    }
+
+    setFilteredData(result)
+  }, [invoiceData, session, selectedTeacher, globalFilter, selectedStatus, reports])
 
   // Unique schools for filter
   const uniqueTeachers = useMemo(() => {
-    return Array.from(new Set(reports.map(report => report.user?.data?.attributes?.username || 'Unknown')))
-  }, [reports])
+    return Array.from(new Set(filteredData.map(report => report.user?.data?.attributes?.username || 'Unknown')))
+  }, [filteredData])
 
   const handleOpenCreateDrawer = () => {
     setSelectedReport(undefined)
@@ -187,7 +206,7 @@ const ReportsListTable = ({ invoiceData }: { invoiceData?: ReportsType[] }) => {
   }
 
   const handleExport = async () => {
-    await exportReportsToExcel(reports)
+    await exportReportsToExcel(filteredData)
   }
 
   // Handler untuk membuka drawer update

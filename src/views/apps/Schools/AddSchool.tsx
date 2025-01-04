@@ -10,6 +10,11 @@ import Drawer from '@mui/material/Drawer'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
+import FormHelperText from '@mui/material/FormHelperText'
+import Select from '@mui/material/Select'
 import Divider from '@mui/material/Divider'
 
 // Third-party Imports
@@ -34,6 +39,7 @@ type FormValidateType = {
   adminEmail?: string
   adminPassword?: string
   adminPhone?: string
+  blocked: boolean | '0' | '1'
   user_school?: number
 }
 
@@ -57,7 +63,8 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
       adminName: '',
       adminEmail: '',
       adminPhone: '',
-      user_school: 0
+      user_school: 0,
+      blocked: initialData ? (initialData.user_school?.data?.attributes?.blocked ? '1' : '0') : '0'
     }
   })
 
@@ -97,9 +104,10 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
           id: initialData.id,
           title: data.title,
           address: data.address,
-          adminName: data.adminName,
+          adminName: data.title,
           adminEmail: data.adminEmail,
           adminPhone: data.adminPhone,
+          blocked: data.blocked === '1' || data.blocked === true,
           user_school: initialData.user_school?.data?.id || 0
         })
 
@@ -114,7 +122,7 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
         await createSchool({
           title: data.title,
           address: data.address,
-          adminName: data.adminName,
+          adminName: data.title,
           adminEmail: data.adminEmail,
           adminPassword: data.adminPassword,
           adminPhone: data.adminPhone
@@ -230,28 +238,6 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
             </Typography>
 
             <Controller
-              name='adminName'
-              control={control}
-              rules={{
-                required: 'Admin name is required',
-                minLength: {
-                  value: 3,
-                  message: 'Name must be at least 3 characters'
-                }
-              }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  fullWidth
-                  label='Admin Name'
-                  placeholder='Enter admin name'
-                  error={!!errors.adminName}
-                  helperText={errors.adminName?.message}
-                />
-              )}
-            />
-
-            <Controller
               name='adminEmail'
               control={control}
               rules={{
@@ -322,6 +308,32 @@ const AddSchool = ({ open, handleClose, initialData }: Props) => {
               )}
             />
           </>
+
+          {/* Blocked User Dropdown */}
+          <FormControl fullWidth error={!!errors.blocked}>
+            <InputLabel id='status-select'>Select Status</InputLabel>
+            <Controller
+              name='blocked'
+              control={control}
+              rules={{ required: 'Status is required' }}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  label='Select Status'
+                  labelId='status-select'
+                  value={field.value === true || field.value === '1' ? '1' : '0'}
+                  onChange={e => {
+                    // Konversi ke boolean
+                    field.onChange(e.target.value === '1')
+                  }}
+                >
+                  <MenuItem value='0'>Active</MenuItem>
+                  <MenuItem value='1'>Blocked</MenuItem>
+                </Select>
+              )}
+            />
+            {errors.blocked && <FormHelperText error>{errors.blocked.message}</FormHelperText>}
+          </FormControl>
 
           {/* Action Buttons */}
           <div className='flex items-center gap-4 mt-4'>

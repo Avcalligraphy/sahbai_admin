@@ -22,7 +22,7 @@ const SchoolsApp = async () => {
   }
 
   // Cek role user
-  if (session.user.role === 'school') {
+  if (session.user.role === 'school' || session.user.role === 'teacher') {
     // Redirect ke homepage jika user adalah school
     const homePage = getLocalizedUrl(themeConfig.homePageUrl, 'en')
 

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 // MUI Imports
 import Grid from '@mui/material/Grid'
@@ -10,29 +10,48 @@ import Typography from '@mui/material/Typography'
 // Third-party Imports
 import classnames from 'classnames'
 
+import type { SessionsType } from '@/types/apps/aspirationsTypes'
+import type { UsersType } from '@/types/apps/userTypes'
+
 import CustomAvatar from '@/@core/components/mui/Avatar'
 
 // Component Imports
 import { useAppContext } from '@/contexts/AppContext'
 
-const StudentsListCards = () => {
+const StudentsListCards = ({ session }: { session: SessionsType }) => {
   const { users, fetchUsers } = useAppContext()
+  const [filteredData, setFilteredData] = useState<UsersType[]>([])
 
   // Fetch users saat komponen dimount
   useEffect(() => {
     fetchUsers()
   }, [])
 
+  useEffect(() => {
+    // Pastikan orderData tersedia
+    if (!users) return
+
+    // Filter berdasarkan role
+    let result = users
+
+    // Jika bukan admin, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(user => user.school?.title === session?.user?.name)
+    }
+
+    setFilteredData(result)
+  }, [users, session])
+
   // Hitung statistik users
   const userStats = useMemo(() => {
     return {
-      totalUsers: users.length,
-      activeUsers: users.filter(user => !user.blocked).length,
-      blockedUsers: users.filter(user => user.blocked).length,
-      students: users.filter(user => user.roleUser === 'user').length,
-      teachers: users.filter(user => user.roleUser === 'teacher').length
+      totalUsers: filteredData.length,
+      activeUsers: filteredData.filter(user => !user.blocked).length,
+      blockedUsers: filteredData.filter(user => user.blocked).length,
+      students: filteredData.filter(user => user.roleUser === 'user').length,
+      teachers: filteredData.filter(user => user.roleUser === 'teacher').length
     }
-  }, [users])
+  }, [filteredData])
 
   // Card data
   const cardData = [

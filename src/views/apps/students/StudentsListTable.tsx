@@ -54,6 +54,8 @@ import { getInitials } from '@/utils/getInitials'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
+import type { SessionsType } from '@/types/apps/aspirationsTypes'
+
 import { useAppContext } from '@/contexts/AppContext'
 import { exportUsersToExcel } from '@/libs/excel'
 
@@ -76,13 +78,14 @@ type UsersTypeWithAction = UsersType & {
 
 type UserRoleType = {
   [key: string]: { icon: string; color: string }
-}
+} & { default: { icon: string; color: string } }
 
 const userRoleObj: UserRoleType = {
   teacher: { icon: 'ri-team-line', color: 'success' },
   user: { icon: 'ri-user-3-line', color: 'primary' },
   school: { icon: 'ri-school-line', color: 'primary' },
-  admin: { icon: 'ri-school-line', color: 'primary' }
+  admin: { icon: 'ri-school-line', color: 'primary' },
+  default: { icon: 'ri-user-line', color: 'secondary' }
 }
 
 type UserStatusType = {
@@ -154,12 +157,13 @@ const userStatusObj: UserStatusType = {
 // Column Definitions
 const columnHelper = createColumnHelper<UsersTypeWithAction>()
 
-const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
+const StudentsListTable = ({ tableData, session }: { tableData?: UsersType[]; session: SessionsType }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [globalFilter, setGlobalFilter] = useState('')
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UsersType | undefined>(undefined)
+  const [filteredData, setFilteredData] = useState<UsersType[]>([])
 
   const handleOpenCreateDrawer = () => {
     setSelectedUser(undefined)
@@ -181,7 +185,7 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
   const { users, fetchUsers, deleteUser, deleteMultipleUsers } = useAppContext()
 
   const handleExport = async () => {
-    await exportUsersToExcel(users)
+    await exportUsersToExcel(filteredData)
   }
 
   // Fetch users on component mount
@@ -190,20 +194,71 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
   }, [])
 
   // Filtered data
-  const filteredData = useMemo(() => {
-    return users.filter(user => {
-      // Filter roleUser
-      const matchesroleUser = filters.roleUser ? user.roleUser === filters.roleUser : true
+  // const filteredData = useMemo(() => {
+  //   return users.filter(user => {
+  //     // Exclude admin dan school roles
+  //     if (user.roleUser === 'admin' || user.roleUser === 'school') {
+  //       return false
+  //     }
 
-      // Filter school
-      const matchesSchool = filters.school ? user.school?.title === filters.school : true
+  //     // Filter roleUser dengan pengecualian
+  //     const matchesroleUser = filters.roleUser
+  //       ? user.roleUser === filters.roleUser && !['admin', 'school'].includes(user.roleUser)
+  //       : true
 
-      // Filter status
-      const matchesStatus = filters.status ? (filters.status === 'active' ? !user.blocked : user.blocked) : true
+  //     // Filter school
+  //     const matchesSchool = filters.school ? user.school?.title === filters.school : true
 
-      return matchesroleUser && matchesSchool && matchesStatus
-    })
-  }, [users, filters])
+  //     // Filter status
+  //     const matchesStatus = filters.status ? (filters.status === 'active' ? !user.blocked : user.blocked) : true
+
+  //     return matchesroleUser && matchesSchool && matchesStatus
+  //   })
+  // }, [users, filters])
+
+  useEffect(() => {
+    // Pastikan tableData tersedia
+    if (!users) return
+
+    // Filter berdasarkan role
+    let result = users
+
+    // Jika role school, filter berdasarkan sekolah user
+    if (session?.user?.role === 'school') {
+      result = result.filter(
+        user => user.school?.title === session?.user?.name && user.roleUser !== 'admin' && user.roleUser !== 'school'
+      )
+    } else {
+      // Untuk role lain, exclude admin dan school
+      result = result.filter(user => user.roleUser !== 'admin' && user.roleUser !== 'school')
+    }
+
+    // Filter berdasarkan roleUser
+    if (filters.roleUser) {
+      result = result.filter(user => user.roleUser === filters.roleUser && !['admin', 'school'].includes(user.roleUser))
+    }
+
+    // Filter berdasarkan sekolah
+    if (filters.school) {
+      result = result.filter(user => user.school?.title === filters.school)
+    }
+
+    // Filter berdasarkan status
+    if (filters.status) {
+      result = result.filter(user => (filters.status === 'active' ? !user.blocked : user.blocked))
+    }
+
+    // Filter berdasarkan global search
+    if (globalFilter) {
+      const searchValue = globalFilter.toLowerCase()
+
+      result = result.filter(user =>
+        Object.values(user).some(value => String(value).toLowerCase().includes(searchValue))
+      )
+    }
+
+    setFilteredData(result)
+  }, [users, session, filters, globalFilter])
 
   // Delete handlers (sama seperti sebelumnya)
   const handleDelete = async (userId: number) => {
@@ -349,8 +404,10 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <Icon
-              className={classnames('text-[22px]', userRoleObj[row.original.roleUser].icon)}
-              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.roleUser].color}-main)` }}
+              className={classnames('text-[22px]', userRoleObj[row.original.roleUser || 'default'].icon)}
+              sx={{
+                color: `var(--mui-palette-${userRoleObj[row.original.roleUser || 'default'].color}-main)`
+              }}
             />
             <Typography className='capitalize' color='text.primary'>
               {row.original.roleUser}
@@ -532,6 +589,8 @@ const StudentsListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         open={isDrawerOpen}
         handleClose={() => setIsDrawerOpen(false)}
         initialData={selectedUser} // Kirim data school jika update
+        role={session?.user?.role || 'admin'}
+        schoolName={session?.user?.name || 'Unknown'}
       />
     </>
   )
