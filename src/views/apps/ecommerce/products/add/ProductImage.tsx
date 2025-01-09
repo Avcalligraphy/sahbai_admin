@@ -1,12 +1,9 @@
 'use client'
 
-// React Imports
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-// Next Imports
 import Link from 'next/link'
 
-// MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
@@ -18,22 +15,27 @@ import Typography from '@mui/material/Typography'
 import { styled } from '@mui/material/styles'
 import type { BoxProps } from '@mui/material/Box'
 
-// Third-party Imports
 import { useDropzone } from 'react-dropzone'
 
-// Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
-
-// Styled Component Imports
 import AppReactDropzone from '@/libs/styles/AppReactDropzone'
+import type { ReadingType } from '@/types/apps/readingTypes'
 
-type FileProp = {
-  name: string
-  type: string
-  size: number
+const getImageUrl = (url: string) => {
+  if (url.startsWith('http')) return url
+
+  return `${process.env.NEXT_PUBLIC_STRAPI_URL}${url}`
 }
 
-// Styled Dropzone Component
+type FileProp = File & {
+  preview?: string
+}
+
+interface ProductImageProps {
+  onFileSelect: (file: File | null) => void
+  initialData?: ReadingType
+}
+
 const Dropzone = styled(AppReactDropzone)<BoxProps>(({ theme }) => ({
   '& .dropzone': {
     minHeight: 'unset',
@@ -47,62 +49,41 @@ const Dropzone = styled(AppReactDropzone)<BoxProps>(({ theme }) => ({
   }
 }))
 
-const ProductImage = () => {
-  // States
-  const [files, setFiles] = useState<File[]>([])
+const ProductImage = ({ onFileSelect, initialData }: ProductImageProps) => {
+  const [selectedFile, setSelectedFile] = useState<FileProp | null>(null)
+  const [preview, setPreview] = useState('')
 
-  // Hooks
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop: (acceptedFiles: File[]) => {
-      setFiles(acceptedFiles.map((file: File) => Object.assign(file)))
+  useEffect(() => {
+    if (initialData?.image?.data?.attributes?.url) {
+      const imageUrl = getImageUrl(initialData.image.data.attributes.url)
+
+      setPreview(imageUrl)
     }
+  }, [initialData])
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop: acceptedFiles => {
+      const file = acceptedFiles[0]
+
+      setSelectedFile(file)
+      setPreview(URL.createObjectURL(file))
+      onFileSelect(file)
+    },
+    maxFiles: 1
   })
 
-  const renderFilePreview = (file: FileProp) => {
-    if (file.type.startsWith('image')) {
-      return <img width={38} height={38} alt={file.name} src={URL.createObjectURL(file as any)} />
-    } else {
-      return <i className='ri-file-text-line' />
-    }
-  }
-
-  const handleRemoveFile = (file: FileProp) => {
-    const uploadedFiles = files
-    const filtered = uploadedFiles.filter((i: FileProp) => i.name !== file.name)
-
-    setFiles([...filtered])
-  }
-
-  const fileList = files.map((file: FileProp) => (
-    <ListItem key={file.name} className='pis-4 plb-3'>
-      <div className='file-details'>
-        <div className='file-preview'>{renderFilePreview(file)}</div>
-        <div>
-          <Typography className='file-name font-medium' color='text.primary'>
-            {file.name}
-          </Typography>
-          <Typography className='file-size' variant='body2'>
-            {Math.round(file.size / 100) / 10 > 1000
-              ? `${(Math.round(file.size / 100) / 10000).toFixed(1)} mb`
-              : `${(Math.round(file.size / 100) / 10).toFixed(1)} kb`}
-          </Typography>
-        </div>
-      </div>
-      <IconButton onClick={() => handleRemoveFile(file)}>
-        <i className='ri-close-line text-xl' />
-      </IconButton>
-    </ListItem>
-  ))
-
-  const handleRemoveAllFiles = () => {
-    setFiles([])
+  const handleRemoveFile = () => {
+    if (preview) URL.revokeObjectURL(preview)
+    setSelectedFile(null)
+    setPreview('')
+    onFileSelect(null)
   }
 
   return (
     <Dropzone>
       <Card>
         <CardHeader
-          title='Product Image'
+          title='Content Image'
           action={
             <Typography
               component={Link}
@@ -130,17 +111,26 @@ const ProductImage = () => {
               </Button>
             </div>
           </div>
-          {files.length ? (
-            <>
-              <List>{fileList}</List>
-              <div className='buttons'>
-                <Button color='error' variant='outlined' onClick={handleRemoveAllFiles}>
-                  Remove All
-                </Button>
-                <Button variant='contained'>Upload Files</Button>
-              </div>
-            </>
-          ) : null}
+          {(selectedFile || preview) && (
+            <List>
+              <ListItem className='pis-4 plb-3'>
+                <div className='file-details flex items-center gap-4'>
+                  <img src={preview} alt='Preview' className='w-10 h-10 object-cover rounded' />
+                  <div>
+                    <Typography className='font-medium'>
+                      {selectedFile?.name || initialData?.image?.data?.attributes?.name}
+                    </Typography>
+                    {selectedFile && (
+                      <Typography variant='body2'>{Math.round(selectedFile.size / 1024).toFixed(1)} kb</Typography>
+                    )}
+                  </div>
+                </div>
+                <IconButton onClick={handleRemoveFile}>
+                  <i className='ri-close-line text-xl' />
+                </IconButton>
+              </ListItem>
+            </List>
+          )}
         </CardContent>
       </Card>
     </Dropzone>

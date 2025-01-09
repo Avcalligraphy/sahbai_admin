@@ -55,6 +55,7 @@ import type { ReadingType } from '@/types/apps/readingTypes'
 import type { SessionsType } from '@/types/apps/aspirationsTypes'
 
 import { useAppContext } from '@/contexts/AppContext'
+import AddReading from './AddReading'
 
 declare module '@tanstack/table-core' {
   interface FilterFns {
@@ -147,8 +148,22 @@ const ReadingListTable = ({ orderData, session }: { orderData?: ReadingType[]; s
   const [filteredData, setFilteredData] = useState<ReadingType[]>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [selectedWritter, setSelectedWritter] = useState<string>('')
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [selectedReading, setSelectedReading] = useState<ReadingType | undefined>(undefined)
+
+  // const [selectedReport, setSelectedReport] = useState<ReadingType | undefined>(undefined)
 
   const { readings, fetchReadings, deleteReading, deleteMultipleReadings } = useAppContext()
+
+  const handleOpenCreateDrawer = () => {
+    setSelectedReading(undefined)
+    setIsDrawerOpen(true)
+  }
+
+  const handleOpenUpdateDrawer = (reading: ReadingType) => {
+    setSelectedReading(reading)
+    setIsDrawerOpen(true)
+  }
 
   useEffect(() => {
     fetchReadings()
@@ -164,7 +179,7 @@ const ReadingListTable = ({ orderData, session }: { orderData?: ReadingType[]; s
 
     // Jika bukan admin, filter berdasarkan sekolah user
     if (session?.user?.role === 'school') {
-      result = result.filter(reading => reading.school.data?.attributes?.title === session?.user?.name)
+      result = result.filter(reading => reading.school?.data?.attributes?.title === session?.user?.name)
     }
 
     // Filter berdasarkan sekolah yang dipilih
@@ -334,14 +349,32 @@ const ReadingListTable = ({ orderData, session }: { orderData?: ReadingType[]; s
       }),
       columnHelper.accessor('updatedAt', {
         header: 'Updated At',
-        cell: ({ row }) => <Typography>{new Date(row.original.updatedAt).toLocaleDateString()}</Typography>
+        cell: ({ row }) => (
+          <Typography>
+            {row.original?.updatedAt ? new Date(row.original.updatedAt).toLocaleDateString() : 'N/A'}
+          </Typography>
+        )
       }),
       columnHelper.accessor('action', {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center gap-0.5'>
-            <IconButton size='small' onClick={() => handleDelete(row.original.id)}>
+            <IconButton
+              size='small'
+              onClick={() => {
+                if (row.original?.id !== undefined) {
+                  handleDelete(row.original.id)
+                } else {
+                  console.warn('ID is undefined, cannot delete.')
+                }
+              }}
+            >
               <i className='ri-delete-bin-7-line text-textSecondary' />
+            </IconButton>
+            <IconButton size='small'>
+              <IconButton size='small' onClick={() => handleOpenUpdateDrawer(row.original)}>
+                <i className='ri-pencil-line text-textSecondary' />
+              </IconButton>
             </IconButton>
           </div>
         ),
@@ -396,117 +429,134 @@ const ReadingListTable = ({ orderData, session }: { orderData?: ReadingType[]; s
   // }
 
   return (
-    <Card>
-      <CardContent className='flex justify-end flex-col sm:flex-row gap-4 flex-wrap items-start sm:items-center'>
-        <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
-          {Object.keys(rowSelection).length > 0 && (
+    <>
+      <Card>
+        <CardContent className='flex justify-between flex-col sm:flex-row gap-4 flex-wrap items-start sm:items-center'>
+          <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
             <Button
               variant='contained'
-              onClick={handleDeleteSelected}
-              startIcon={<i className='ri-delete-bin-7-line' />}
+              startIcon={<i className='ri-add-line' />}
+              className='is-full sm:is-auto'
+              onClick={handleOpenCreateDrawer}
             >
-              Delete {Object.keys(rowSelection).length} Selected
+              Add Reading
             </Button>
-          )}
-        </div>
-        <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
-          <DebouncedInput
-            value={globalFilter ?? ''}
-            onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Aspirations'
-            className='is-full sm:is-auto min-is-[250px]'
-          />
-          <FormControl fullWidth size='small' className='min-is-[175px]'>
-            <InputLabel id='writter-select'>Writter</InputLabel>
-            <Select
-              fullWidth
-              id='writter-school'
-              value={selectedWritter}
-              onChange={e => setSelectedWritter(e.target.value)}
-              label='Writter'
-              labelId='writter-select'
-            >
-              <MenuItem value=''>All Writters</MenuItem>
-              {uniqueWritters.map(writter => (
-                <MenuItem key={writter} value={writter}>
-                  {writter}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-      </CardContent>
-      <div className='overflow-x-auto'>
-        <table className={tableStyles.table}>
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          className={classnames({
-                            'flex items-center': header.column.getIsSorted(),
-                            'cursor-pointer select-none': header.column.getCanSort()
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <i className='ri-arrow-up-s-line text-xl' />,
-                            desc: <i className='ri-arrow-down-s-line text-xl' />
-                          }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
-                        </div>
-                      </>
-                    )}
-                  </th>
+            {Object.keys(rowSelection).length > 0 && (
+              <Button
+                variant='contained'
+                onClick={handleDeleteSelected}
+                startIcon={<i className='ri-delete-bin-7-line' />}
+              >
+                Delete {Object.keys(rowSelection).length} Selected
+              </Button>
+            )}
+          </div>
+          <div className='flex items-center flex-col sm:flex-row is-full sm:is-auto gap-4'>
+            <DebouncedInput
+              value={globalFilter ?? ''}
+              onChange={value => setGlobalFilter(String(value))}
+              placeholder='Search Readings'
+              className='is-full sm:is-auto min-is-[250px]'
+            />
+            <FormControl fullWidth size='small' className='min-is-[175px]'>
+              <InputLabel id='writter-select'>Writter</InputLabel>
+              <Select
+                fullWidth
+                id='writter-school'
+                value={selectedWritter}
+                onChange={e => setSelectedWritter(e.target.value)}
+                label='Writter'
+                labelId='writter-select'
+              >
+                <MenuItem value=''>All Writters</MenuItem>
+                {uniqueWritters.map(writter => (
+                  <MenuItem key={writter} value={writter}>
+                    {writter}
+                  </MenuItem>
                 ))}
-              </tr>
-            ))}
-          </thead>
-          {table.getFilteredRowModel().rows.length === 0 ? (
-            <tbody>
-              <tr>
-                <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                  No data available
-                </td>
-              </tr>
-            </tbody>
-          ) : (
-            <tbody>
-              {table
-                .getRowModel()
-                .rows.slice(0, table.getState().pagination.pageSize)
-                .map(row => {
-                  return (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  )
-                })}
-            </tbody>
-          )}
-        </table>
-      </div>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        component='div'
-        className='border-bs'
-        count={table.getFilteredRowModel().rows.length}
-        rowsPerPage={table.getState().pagination.pageSize}
-        page={table.getState().pagination.pageIndex}
-        SelectProps={{
-          inputProps: { 'aria-label': 'rows per page' }
-        }}
-        onPageChange={(_, page) => {
-          table.setPageIndex(page)
-        }}
-        onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
+              </Select>
+            </FormControl>
+          </div>
+        </CardContent>
+        <div className='overflow-x-auto'>
+          <table className={tableStyles.table}>
+            <thead>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id}>
+                      {header.isPlaceholder ? null : (
+                        <>
+                          <div
+                            className={classnames({
+                              'flex items-center': header.column.getIsSorted(),
+                              'cursor-pointer select-none': header.column.getCanSort()
+                            })}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {{
+                              asc: <i className='ri-arrow-up-s-line text-xl' />,
+                              desc: <i className='ri-arrow-down-s-line text-xl' />
+                            }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
+                          </div>
+                        </>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            {table.getFilteredRowModel().rows.length === 0 ? (
+              <tbody>
+                <tr>
+                  <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
+                    No data available
+                  </td>
+                </tr>
+              </tbody>
+            ) : (
+              <tbody>
+                {table
+                  .getRowModel()
+                  .rows.slice(0, table.getState().pagination.pageSize)
+                  .map(row => {
+                    return (
+                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            )}
+          </table>
+        </div>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          component='div'
+          className='border-bs'
+          count={table.getFilteredRowModel().rows.length}
+          rowsPerPage={table.getState().pagination.pageSize}
+          page={table.getState().pagination.pageIndex}
+          SelectProps={{
+            inputProps: { 'aria-label': 'rows per page' }
+          }}
+          onPageChange={(_, page) => {
+            table.setPageIndex(page)
+          }}
+          onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
+        />
+      </Card>
+      <AddReading
+        open={isDrawerOpen}
+        handleClose={() => setIsDrawerOpen(false)}
+        initialData={selectedReading}
+        role={session?.user?.role || 'admin'}
+        schoolName={session?.user?.name || 'Unknown'}
       />
-    </Card>
+    </>
   )
 }
 

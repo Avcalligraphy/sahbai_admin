@@ -1,5 +1,7 @@
 // import { getServerSession } from 'next-auth/next'
 
+import type { RichTextContent } from '@/types/apps/readingTypes'
+
 // import { authOptions } from '@/libs/auth'
 
 // export async function getAuthToken() {
@@ -107,6 +109,127 @@ export const readingActions = {
         id: item.id,
         ...item.attributes
       }))
+    }
+  },
+
+  update: async (
+    id: number,
+    data: {
+      title: string
+      content: RichTextContent[]
+      writter?: string
+      image?: number | null
+      school: number
+    }
+  ) => {
+    const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+    const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+
+    // Tambahkan populate untuk image dan school
+    const response = await fetch(`${apiURL}/api/blogs/${id}?populate=image,school`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        data: {
+          title: data.title,
+          content: data.content,
+          writter: data.writter,
+          image: data.image,
+          school: {
+            connect: [{ id: data.school }]
+          }
+        }
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to update reading')
+    }
+
+    const result = await response.json()
+
+    return {
+      id: result.data.id,
+      ...result.data.attributes,
+      title: result.data.attributes.title,
+      writter: result.data.attributes.writter,
+      image: {
+        data: result.data.attributes.image?.data || null
+      },
+      school: {
+        data: {
+          id: data.school,
+          attributes: {
+            title: result.data.attributes.school?.data?.attributes?.title || ''
+          }
+        }
+      }
+    }
+  },
+
+  // Create action
+  create: async (data: {
+    title: string
+    content: RichTextContent[]
+    writter?: string
+    image?: number | null
+    school: number
+  }) => {
+    try {
+      const apiURL = process.env.NEXT_PUBLIC_STRAPI_URL
+      const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN
+
+      // Perbaiki URL populate
+      const response = await fetch(`${apiURL}/api/blogs?populate=image,school`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          data: {
+            title: data.title,
+            content: data.content,
+            writter: data.writter,
+            image: data.image,
+            school: {
+              connect: [{ id: data.school }]
+            }
+          }
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+
+        throw new Error(errorData.error?.message || 'Failed to create blog')
+      }
+
+      const result = await response.json()
+
+      return {
+        id: result.data.id,
+        ...result.data.attributes,
+        title: result.data.attributes.title,
+        writter: result.data.attributes.writter,
+        image: {
+          data: result.data.attributes.image?.data || null
+        },
+        school: {
+          data: {
+            id: data.school,
+            attributes: {
+              title: result.data.attributes.school?.data?.attributes?.title || ''
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error)
+      throw error
     }
   },
 

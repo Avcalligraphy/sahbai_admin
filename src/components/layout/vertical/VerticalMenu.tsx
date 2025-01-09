@@ -16,7 +16,7 @@ import type { getDictionary } from '@/utils/getDictionary'
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
 
 // Component Imports
-import { Menu, MenuItem } from '@menu/vertical-menu'
+import { Menu, MenuItem, MenuSection } from '@menu/vertical-menu'
 
 // import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
@@ -41,6 +41,19 @@ type RenderExpandIconProps = {
 type Props = {
   dictionary: Awaited<ReturnType<typeof getDictionary>>
   scrollMenu: (container: any, isPerfectScrollbar: boolean) => void
+}
+
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case 'admin':
+      return 'SUPERADMIN'
+    case 'school':
+      return 'SCHOOL ADMIN'
+    case 'teacher':
+      return 'TEACHER'
+    default:
+      return 'UNKNOWN ROLE'
+  }
 }
 
 const RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) => (
@@ -104,71 +117,75 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
           <MenuItem href={`/${locale}/dashboards/academy`}>{dictionary['navigation'].academy}</MenuItem>
           <MenuItem href={`/${locale}/dashboards/logistics`}>{dictionary['navigation'].logistics}</MenuItem>
         </SubMenu> */}
-        <MenuItem
-          href={`/${locale}/dashboards/crm`}
-          icon={<i className='ri-home-smile-line' />}
-          exactMatch={false}
-          activeUrl='/dashboards/crm'
-        >
-          {dictionary['navigation'].crm}
-        </MenuItem>
-        {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+        <MenuSection label={getRoleLabel(session?.user?.role || 'Unknown')}>
           <MenuItem
-            href={`/${locale}/apps/aspirations`}
-            icon={<i className='ri-apps-line' />}
+            href={`/${locale}/dashboards/crm`}
+            icon={<i className='ri-home-smile-line' />}
             exactMatch={false}
-            activeUrl='/apps/aspirations'
+            activeUrl='/dashboards/crm'
           >
-            Aspirations
+            {dictionary['navigation'].crm}
           </MenuItem>
-        )}
-        {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+          {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+            <MenuItem
+              href={`/${locale}/apps/aspirations`}
+              icon={<i className='ri-apps-line' />}
+              exactMatch={false}
+              activeUrl='/apps/aspirations'
+            >
+              Aspirations
+            </MenuItem>
+          )}
+          {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+            <MenuItem
+              href={`/${locale}/apps/reading-corners`}
+              icon={<i className='ri-book-2-line' />}
+              exactMatch={false}
+              activeUrl='/apps/reading-corners'
+            >
+              Reading Corners
+            </MenuItem>
+          )}
           <MenuItem
-            href={`/${locale}/apps/reading-corners`}
-            icon={<i className='ri-book-2-line' />}
+            href={`/${locale}/apps/reports`}
+            icon={<i className='ri-folder-chart-line' />}
             exactMatch={false}
-            activeUrl='/apps/reading-corners'
+            activeUrl='/apps/reports'
           >
-            Reading Corners
+            Reports
           </MenuItem>
-        )}
-        <MenuItem
-          href={`/${locale}/apps/reports`}
-          icon={<i className='ri-folder-chart-line' />}
-          exactMatch={false}
-          activeUrl='/apps/reports'
-        >
-          Reports
-        </MenuItem>
-        {shouldShowMenuItem() && (
-          <MenuItem
-            href={`/${locale}/apps/schools`}
-            icon={<i className='ri-school-line' />}
-            exactMatch={false}
-            activeUrl='/apps/schools'
-          >
-            Schools
-          </MenuItem>
-        )}
-        {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
-          <MenuItem
-            href={`/${locale}/apps/students`}
-            icon={<i className='ri-team-line' />}
-            exactMatch={false}
-            activeUrl='/apps/students'
-          >
-            Users
-          </MenuItem>
-        )}
+          {shouldShowMenuItem() && (
+            <MenuItem
+              href={`/${locale}/apps/schools`}
+              icon={<i className='ri-school-line' />}
+              exactMatch={false}
+              activeUrl='/apps/schools'
+            >
+              Schools
+            </MenuItem>
+          )}
+          {(session?.user?.role === 'admin' || session?.user?.role === 'school') && (
+            <MenuItem
+              href={`/${locale}/apps/students`}
+              icon={<i className='ri-team-line' />}
+              exactMatch={false}
+              activeUrl='/apps/students'
+            >
+              Users
+            </MenuItem>
+          )}
+        </MenuSection>
 
-        <MenuItem
-          href={`/${locale}/pages/user-profile`}
-          icon={<i className='ri-settings-5-line' />}
-          exactMatch={false}
-          activeUrl='/pages/user-profile'
-        >
-          Setting
-        </MenuItem>
+        <MenuSection label='SETTING APP'>
+          <MenuItem
+            href={`/${locale}/pages/user-profile`}
+            icon={<i className='ri-settings-5-line' />}
+            exactMatch={false}
+            activeUrl='/pages/user-profile'
+          >
+            Setting
+          </MenuItem>
+        </MenuSection>
         {/* <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
           <MenuItem href='/front-pages/landing-page' target='_blank'>
             {dictionary['navigation'].landing}

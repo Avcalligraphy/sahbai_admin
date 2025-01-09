@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 
 // MUI Imports
 import Card from '@mui/material/Card'
-import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
 import CardHeader from '@mui/material/CardHeader'
 import Typography from '@mui/material/Typography'
@@ -95,15 +94,15 @@ const TotalTransactions = () => {
     <Card className='md:bs-full'>
       <Grid container className='md:bs-full'>
         <Grid item xs={12} sm={7} className='max-sm:border-be sm:border-ie flex flex-col'>
-          <CardHeader title='Total Transactions' />
+          <CardHeader title='Reading Overviews' />
           <CardContent className='flex flex-grow flex-col justify-center pbs-5'>
             <AppReactApexCharts type='bar' height={232} width='100%' series={series} options={options} />
           </CardContent>
         </Grid>
         <Grid item xs={12} sm={5} className='flex flex-col'>
           <CardHeader
-            title='Report'
-            subheader='Last month transactions $234.40k'
+            title='Report Reading'
+            subheader='Last month Reading 200'
             action={<OptionMenu options={['Refresh', 'Update', 'Share']} />}
           />
           <CardContent className='flex flex-grow flex-col justify-center'>
@@ -134,15 +133,12 @@ const TotalTransactions = () => {
                 </div>
               </div>
               <Divider />
-              <div className='flex flex-wrap gap-3 items-center justify-around '>
+              <div className='flex flex-wrap gap-3 items-center justify-start '>
                 <div className='flex flex-col items-center gap-0.5'>
                   <Typography>Performance</Typography>
                   <Typography color='text.primary' className='font-medium'>
                     +94.15%
                   </Typography>
-                </div>
-                <div>
-                  <Button variant='contained'>View Report</Button>
                 </div>
               </div>
             </div>

@@ -9,8 +9,6 @@ import Button from '@mui/material/Button'
 import type { ProfileHeaderType } from '@/types/pages/profileTypes'
 
 const UserProfileHeader = ({ data }: { data?: ProfileHeaderType }) => {
-  console.log('data profile', data)
-
   return (
     <Card>
       <CardMedia image='/images/pages/profile-banner.png' className='bs-[250px]' />

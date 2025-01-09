@@ -42,7 +42,7 @@ const ReadingCard = ({ session }: { session: SessionsType }) => {
 
     // Jika bukan admin, filter berdasarkan sekolah user
     if (session?.user?.role === 'school') {
-      result = result.filter(reading => reading.school.data?.attributes?.title === session?.user?.name)
+      result = result.filter(reading => reading.school?.data?.attributes?.title === session?.user?.name)
     }
 
     setFilteredData(result)

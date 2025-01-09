@@ -12,7 +12,8 @@ import { authOptions } from '@/libs/auth'
 import Sales from '@views/dashboards/ecommerce/Sales'
 import LogisticsStatisticsCard from '@views/apps/logistics/dashboard/LogisticsStatisticsCard'
 import CardStatVertical from '@components/card-statistics/Vertical'
-import DonutChart from '@views/dashboards/crm/DonutChart'
+
+// import DonutChart from '@views/dashboards/crm/DonutChart'
 import TotalTransactions from '@views/dashboards/analytics/TotalTransactions'
 import Performance from '@views/dashboards/analytics/Performance'
 
@@ -68,12 +69,12 @@ const calculateWriterStats = (data: ReadingType[]) => {
     acc[writer].count++
 
     // Simpan artikel terbaru
-    const currentDate = new Date(item.createdAt)
+    const currentDate = new Date(item.createdAt!)
 
     if (!acc[writer].latestArticle || new Date(acc[writer].latestArticle.date) < currentDate) {
       acc[writer].latestArticle = {
         title: item.title,
-        date: item.createdAt
+        date: item.createdAt!
       }
     }
 
@@ -151,8 +152,6 @@ const DashboardCRM = async () => {
   const filteredReports = filterDataByRole(reports)
   const filteredStudents = filterDataByRole(students)
 
-  console.log(filteredAspirations)
-
   // const serverMode = getServerMode()
   // const data = await getUserData()
 
@@ -218,19 +217,19 @@ const DashboardCRM = async () => {
       <Grid item xs={12} md={6}>
         <Sales data={filteredReports} />
       </Grid>
-      <Grid item xs={12} sm={3} md={2}>
+      {/* <Grid item xs={12} sm={3} md={2}>
         <CardStatVertical
           stats='4'
-          title='Writter'
+          title='Writer'
           trendNumber='38%'
           chipText='Most'
           avatarColor='success'
-          avatarIcon='ri-handbag-line'
+          avatarIcon='ri-pen-nib-line'
           avatarIconSize={24}
           avatarSkin='light'
           chipColor='secondary'
         />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} sm={3} md={2}>
         <Tooltip
           title={
@@ -257,9 +256,9 @@ const DashboardCRM = async () => {
           </div>
         </Tooltip>
       </Grid>
-      <Grid item xs={12} sm={3} md={2}>
+      {/* <Grid item xs={12} sm={3} md={2}>
         <DonutChart />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} md={8}>
         <TotalTransactions />
       </Grid>

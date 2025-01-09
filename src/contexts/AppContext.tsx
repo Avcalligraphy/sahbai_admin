@@ -2,7 +2,7 @@
 // @/context/AppContext.tsx
 'use client'
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useCallback, useContext, useState } from 'react'
 
 // Import semua tipe yang dibutuhkan
 import type { AspirationsType } from '@/types/apps/aspirationsTypes'
@@ -10,9 +10,16 @@ import type { SchoolsType } from '@/types/apps/schoolsTypes'
 import { aspirationActions, readingActions, reportActions, schoolActions, userActions } from '@/libs/actions/actions'
 import type { UsersType } from '@/types/apps/userTypes'
 import type { ReportsType } from '@/types/apps/reportsTypes'
-import type { ReadingType } from '@/types/apps/readingTypes'
+import type { ReadingType, RichTextContent } from '@/types/apps/readingTypes'
 
 // Import semua actions
+type Reading = {
+  id?: number
+  title: string
+  content: RichTextContent[]
+
+  // tambahkan field lain sesuai kebutuhan
+}
 
 // Extend AppContextType untuk menambahkan Schools
 type AppContextType = {
@@ -28,6 +35,21 @@ type AppContextType = {
   readingsLoading: boolean
   readingsError: string | null
   fetchReadings: () => Promise<void>
+  createReadings: (data: {
+    title: string
+    content: RichTextContent[]
+    writter?: string
+    image?: number | null
+    school: number
+  }) => Promise<void>
+  updateReadings: (data: {
+    id: number
+    title: string
+    content: RichTextContent[]
+    writter?: string
+    image?: number | null
+    school: number
+  }) => Promise<void>
   deleteReading: (id: number) => Promise<void>
   deleteMultipleReadings: (ids: number[]) => Promise<void>
 
@@ -148,6 +170,8 @@ const AppContext = createContext<AppContextType>({
   readingsLoading: false,
   readingsError: null,
   fetchReadings: async () => {},
+  createReadings: async () => {},
+  updateReadings: async () => {},
   deleteReading: async () => {},
   deleteMultipleReadings: async () => {},
 
@@ -224,6 +248,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  // Membuat reading baru
+  const createReadings = async (data: {
+    title: string
+    content: RichTextContent[]
+    writter?: string
+    image?: number | null
+    school: number
+  }) => {
+    setReadingsLoading(true)
+    setReadingsError(null)
+
+    try {
+      const newReading = await readingActions.create(data)
+
+      setReadings(prev => [...prev, newReading])
+    } catch (error) {
+      setReadingsError(error instanceof Error ? error.message : 'Failed to create reading')
+      throw error
+    } finally {
+      setReadingsLoading(false)
+    }
+  }
+
+  const updateReadings = async (data: {
+    id: number
+    title: string
+    content: RichTextContent[]
+    writter?: string
+    image?: number | null
+    school: number
+  }) => {
+    setReadingsLoading(true)
+    setReadingsError(null)
+
+    try {
+      const updatedReading = await readingActions.update(data.id, data)
+
+      setReadings(prev => prev.map(reading => (reading.id === data.id ? updatedReading : reading)))
+    } catch (error) {
+      setReadingsError(error instanceof Error ? error.message : 'Failed to update reading')
+      throw error
+    } finally {
+      setReadingsLoading(false)
+    }
+  }
+
   const deleteReading = async (id: number) => {
     try {
       await readingActions.delete(id)
@@ -236,7 +306,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteMultipleReadings = async (ids: number[]) => {
     try {
       await Promise.all(ids.map(id => readingActions.delete(id)))
-      setReadings(prev => prev.filter(item => !ids.includes(item.id)))
+
+      setReadings(prev => prev.filter(item => !ids.includes(item.id!)))
     } catch (error) {
       setReadingsError(error instanceof Error ? error.message : 'Failed to delete readings')
     }
@@ -710,6 +781,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     readingsLoading,
     readingsError,
     fetchReadings,
+    createReadings,
+    updateReadings,
     deleteReading,
     deleteMultipleReadings,
 

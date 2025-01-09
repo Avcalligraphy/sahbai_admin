@@ -2,18 +2,19 @@
 import Grid from '@mui/material/Grid'
 
 // Component Imports
-import ProductAddHeader from '@views/apps/ecommerce/products/add/ProductAddHeader'
-import ProductInformation from '@views/apps/ecommerce/products/add/ProductInformation'
-import ProductImage from '@views/apps/ecommerce/products/add/ProductImage'
-import ProductVariants from '@views/apps/ecommerce/products/add/ProductVariants'
-import ProductInventory from '@views/apps/ecommerce/products/add/ProductInventory'
+// import ProductAddHeader from '@views/apps/ecommerce/products/add/ProductAddHeader'
+// import ProductInformation from '@views/apps/ecommerce/products/add/ProductInformation'
+// import ProductImage from '@views/apps/ecommerce/products/add/ProductImage'
+// import ProductVariants from '@views/apps/ecommerce/products/add/ProductVariants'
+// import ProductInventory from '@views/apps/ecommerce/products/add/ProductInventory'
+
 import ProductPricing from '@views/apps/ecommerce/products/add/ProductPricing'
 import ProductOrganize from '@views/apps/ecommerce/products/add/ProductOrganize'
 
 const eCommerceProductsAdd = () => {
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <ProductAddHeader />
       </Grid>
       <Grid item xs={12} md={8}>
@@ -31,7 +32,7 @@ const eCommerceProductsAdd = () => {
             <ProductInventory />
           </Grid>
         </Grid>
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} md={4}>
         <Grid container spacing={6}>
           <Grid item xs={12}>

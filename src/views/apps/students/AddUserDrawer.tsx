@@ -359,10 +359,18 @@ const AddUserDrawer = ({ open, handleClose, initialData, role, schoolName }: Pro
             name='phone'
             control={control}
             rules={{
-              required: 'Phone number is required',
+              required: 'Nomor telepon wajib diisi',
               pattern: {
-                value: /^[0-9]{10}$/,
-                message: 'Invalid phone number'
+                value: /^(^\+62\s?|^0)(\d{9,12})$/,
+                message: 'Nomor telepon tidak valid'
+              },
+              validate: value => {
+                // Validasi panjang nomor HP Indonesia
+                const cleanedNumber = value.replace(/\D/g, '')
+
+                return (
+                  (cleanedNumber.length >= 10 && cleanedNumber.length <= 13) || 'Nomor telepon harus antara 10-13 digit'
+                )
               }
             }}
             render={({ field }) => (
@@ -370,10 +378,13 @@ const AddUserDrawer = ({ open, handleClose, initialData, role, schoolName }: Pro
                 {...field}
                 fullWidth
                 type='tel'
-                label='Phone'
-                placeholder='1234567890'
+                label='Nomor Telepon'
+                placeholder='08xx-xxxx-xxxx'
                 error={!!errors.phone}
                 helperText={errors.phone?.message}
+                inputProps={{
+                  maxLength: 15 // Membatasi input maksimal
+                }}
               />
             )}
           />
@@ -515,7 +526,7 @@ const AddUserDrawer = ({ open, handleClose, initialData, role, schoolName }: Pro
                 />
                 <label htmlFor='photo-upload'>
                   <Button variant='contained' component='span' startIcon={<i className='ri-upload-2-line' />}>
-                    Upload Incident Photo
+                    Upload User Photo
                   </Button>
                 </label>
 
